@@ -4,7 +4,7 @@ public class IntArray extends Declarations {
 
 	private String type;
 	private String arrayName;
-	private int index;
+	private int size;
 	
 	public IntArray() {
 		super();
@@ -12,13 +12,13 @@ public class IntArray extends Declarations {
 	public IntArray(String arrayName, int index) {
 		super();
 		this.arrayName = arrayName;
-		this.index = index;
+		this.size = index;
 	}
 	public IntArray(String type, String arrayName, int index) {
 		super();
 		this.type = type;
 		this.arrayName = arrayName;
-		this.index = index;
+		this.size = index;
 	}
 	
 	public String getType() {
@@ -28,7 +28,7 @@ public class IntArray extends Declarations {
 		return arrayName;
 	}
 	public int getIndex() {
-		return index;
+		return size;
 	}
 	
 	

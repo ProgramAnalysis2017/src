@@ -1,8 +1,13 @@
 package microC.parsing;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import microC.parsing.MicroCParser.DeclContext;
 import microC.parsing.MicroCParser.StmtContext;
 import programAnalysis.Declarations.DeclarationsSeqs;
+import programAnalysis.Declarations.IntArray;
+import programAnalysis.Declarations.IntX;
 import programAnalysis.programs.Program;
 import programAnalysis.statements.StatementsSeqs;
 
@@ -80,15 +85,38 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 	@Override public DeclarationsSeqs visitDecl(MicroCParser.DeclContext ctx) { 
 		DeclarationsSeqs decs = new DeclarationsSeqs();
 		String declaration = ctx.basicDecl().getText();//get the first statement of a list of statement;
-//		System.out.println(ctx.getText());
-//		System.out.println(ctx.decl().getText());
-//		System.out.println(ctx.basicDecl().getText());
-		if(!( "".equals(ctx.decl().getText()) ) || null != ctx.decl().getText()) {
-			decs.setD1( visitDecl(ctx.decl()) );
-		}
 		
-		return decs; 
-		
+		System.out.println(declaration);
+		declaration = "intAbc5;";
+		Pattern pattern = Pattern.compile("[a-zA-Z0-9;]*");
+		Matcher matcher = pattern.matcher(declaration);
+		if (!matcher.matches()) {
+	           //System.out.println(declaration + "is an array");
+	           String typeName = declaration.substring(0,3);
+	           String arraySizeStr = declaration.substring(declaration.indexOf("[") + 1, declaration.indexOf("]"));
+	           String varName = declaration.substring(3, declaration.indexOf("["));
+	           int arraySize = Integer.parseInt(arraySizeStr);
+	           IntArray declArray = new IntArray(typeName,varName,arraySize);
+	           decs.setIntArray(declArray);
+	           System.out.println(typeName);
+	           System.out.println(varName);
+	           System.out.println(arraySize);
+	    }else{    	
+	    	String typeName = declaration.substring(0,3);
+	    	String varName = declaration.substring(3,declaration.indexOf(";"));
+	    	int VarValue = 0;
+	    	IntX declVar = new IntX(typeName,varName,VarValue);
+	    	decs.setIntX(declVar);
+	    	System.out.println(typeName);
+	    	System.out.println(varName);
+	    }
+		//System.out.println(ctx.getText());
+		//System.out.println(ctx.decl().getText());
+		//System.out.println(ctx.basicDecl().getText());
+//		if( null != ctx.decl()) {
+//			decs.setD1( visitDecl(ctx.decl()) );
+//		}		
+		return decs; 	
 	}
 	/**
 	 * {@inheritDoc}
