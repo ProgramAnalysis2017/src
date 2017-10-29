@@ -14,7 +14,7 @@ public class MicroC {
 			System.out.println("Error: No program specified.");
 			return;
 		}
-        MicroCLexer lex = new MicroCLexer(new ANTLRFileStream(args[0]));
+        MicroCLexer lex = new MicroCLexer(new ANTLRFileStream(args[0]));//
         CommonTokenStream tokens = new CommonTokenStream(lex);
         MicroCParser parser = new MicroCParser(tokens);
 		ProgramContext ctx = parser.program(); //This command parses the program.
