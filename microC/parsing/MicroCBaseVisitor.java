@@ -100,7 +100,7 @@ public class MicroCBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public StatementsSeqs visitStmt(MicroCParser.StmtContext ctx) { return new StatementsSeqs(); }
+	@Override public StatementsSeqs visitStmt(MicroCParser.StmtContext ctx) { return (StatementsSeqs) visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

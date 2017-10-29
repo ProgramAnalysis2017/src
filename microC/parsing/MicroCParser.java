@@ -5,6 +5,11 @@ import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.misc.*;
 import org.antlr.v4.runtime.tree.*;
+
+import programAnalysis.Declarations.DeclarationsSeqs;
+import programAnalysis.programs.Program;
+import programAnalysis.statements.StatementsSeqs;
+
 import java.util.List;
 import java.util.Iterator;
 import java.util.ArrayList;
@@ -817,9 +822,9 @@ public class MicroCParser extends Parser {
 			if ( listener instanceof MicroCListener ) ((MicroCListener)listener).exitDecl(this);
 		}
 		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof MicroCVisitor ) return ((MicroCVisitor<? extends T>)visitor).visitDecl(this);
-			else return visitor.visitChildren(this);
+		public <DeclarationsSeqs> DeclarationsSeqs accept(ParseTreeVisitor<? extends DeclarationsSeqs> visitor) {
+			if ( visitor instanceof MicroCVisitor ) return (DeclarationsSeqs) ((MicroCVisitor<? extends DeclarationsSeqs>)visitor).visitDecl(this);
+			else return (DeclarationsSeqs) visitor.visitChildren(this);
 		}
 	}
 
@@ -997,9 +1002,9 @@ public class MicroCParser extends Parser {
 			if ( listener instanceof MicroCListener ) ((MicroCListener)listener).exitStmt(this);
 		}
 		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof MicroCVisitor ) return ((MicroCVisitor<? extends T>)visitor).visitStmt(this);
-			else return visitor.visitChildren(this);
+		public <StatementsSeqs> StatementsSeqs accept(ParseTreeVisitor<? extends StatementsSeqs> visitor) {
+			if ( visitor instanceof MicroCVisitor ) return (StatementsSeqs) ((MicroCVisitor<? extends StatementsSeqs>)visitor).visitStmt(this);
+			else return (StatementsSeqs) visitor.visitChildren(this);
 		}
 	}
 
@@ -1561,9 +1566,9 @@ public class MicroCParser extends Parser {
 			if ( listener instanceof MicroCListener ) ((MicroCListener)listener).exitProgram(this);
 		}
 		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof MicroCVisitor ) return ((MicroCVisitor<? extends T>)visitor).visitProgram(this);
-			else return visitor.visitChildren(this);
+		public <Program> Program accept(ParseTreeVisitor<? extends Program> visitor) {
+			if ( visitor instanceof MicroCVisitor ) return (Program) ((MicroCVisitor<? extends Program>)visitor).visitProgram(this);
+			else return (Program) visitor.visitChildren(this);
 		}
 	}
 

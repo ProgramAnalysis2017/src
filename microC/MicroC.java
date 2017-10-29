@@ -18,7 +18,7 @@ public class MicroC {
         CommonTokenStream tokens = new CommonTokenStream(lex);
         MicroCParser parser = new MicroCParser(tokens);
 		ProgramContext ctx = parser.program(); //This command parses the program.
-		MicroCVisitor<T> myVisitor = new MyVisitor<T>();
+		MyVisitor<T> myVisitor = new MyVisitor<T>();
 		Program program = myVisitor.visitProgram(ctx);
        
 	}

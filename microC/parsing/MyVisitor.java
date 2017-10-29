@@ -77,16 +77,18 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public DeclarationsSeqs visitDecl(MicroCParser.DeclContext ctx) { 
+	@Override public DeclarationsSeqs visitDecl(MicroCParser.DeclContext ctx) {
 		DeclarationsSeqs decs = new DeclarationsSeqs();
-		String declaration = ctx.basicDecl().getText();//get the first statement of a list of statement;
-//		System.out.println(ctx.getText());
-//		System.out.println(ctx.decl().getText());
-//		System.out.println(ctx.basicDecl().getText());
-		if(!( "".equals(ctx.decl().getText()) ) || null != ctx.decl().getText()) {
-			decs.setD1( visitDecl(ctx.decl()) );
+		if(null != ctx.basicDecl()) {
+			String declaration = ctx.basicDecl().getText();//get the first statement of a list of statement;
+//			System.out.println(ctx.getText());
+//			System.out.println(ctx.decl().getText());
+//			System.out.println(ctx.basicDecl().getText());
+
+			if( null != ctx.decl() ) {
+				decs.setD1( visitDecl(ctx.decl()) );
+			}
 		}
-		
 		return decs; 
 		
 	}
@@ -105,6 +107,7 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 	 */
 	@Override public StatementsSeqs visitStmt(MicroCParser.StmtContext ctx) { 
 		StatementsSeqs statements = new StatementsSeqs();
+		System.out.println(ctx.basicStmt());
 		return statements; 
 	}
 	/**
@@ -175,8 +178,8 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 		Program program = new Program();
 		DeclContext dec = ctx.decl();// get all declarations
 		StmtContext stmt = ctx.stmt();//get all statements
-		if(dec != null) {
-			DeclarationsSeqs decs = visitDecl(dec);
+		if(null != dec) {
+			DeclarationsSeqs decs = this.visitDecl(dec);
 			program.setDeclarations(decs);
 		}
 		if(stmt != null) {
