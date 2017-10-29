@@ -13,6 +13,7 @@ import programAnalysis.statements.IfElse;
 import programAnalysis.Epressions.VariableX;
 import programAnalysis.operatiors.Opa;
 import programAnalysis.operatiors.Opr;
+import programAnalysis.programs.Program;
 import programAnalysis.Epressions.ExpressionOperations;
 import programAnalysis.Epressions.Expressions;
 import programAnalysis.Epressions.IntegerN;
@@ -32,6 +33,8 @@ public class Graph {
 	private int exit = 0;
 	private int whileConditionLabel = 0;
 	private int labelSum;
+	
+	private Program program;
 	
 	private ArrayList<ArrayList<String>> RDo = new ArrayList<ArrayList<String>>();
 	private ArrayList<ArrayList<String>> RDexit = new ArrayList<ArrayList<String>>();
