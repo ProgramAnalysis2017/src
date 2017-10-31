@@ -30,5 +30,6 @@ public class If extends Statements {
 	public void setS0(Statements s0) {
 		this.s0 = s0;
 	}
+
 	
 }

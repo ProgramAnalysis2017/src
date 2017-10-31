@@ -22,4 +22,9 @@ public class NotB extends Expressions {
 		return b;
 	}
 	
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return non + " " + b.toString();
+	}
 }

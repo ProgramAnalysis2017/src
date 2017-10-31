@@ -10,8 +10,8 @@ public class Opb extends Operators {
 		this.or = or;
 	}
 	
-	private String and;
-	private String or;
+	private String and = "&";
+	private String or = "|";
 	
 	public enum opbs{
 		and, or;

@@ -2,52 +2,79 @@ package programAnalysis.operatiors;
 
 public class Opr extends Operators {
 	
-	private String less = "<";
-	private String greater = ">";
-	private String lessThan = "<=";
-	private String greaterThan = ">=" ;
+	private String lessThan = "<";
+	private String greaterThan = ">";
+	private String lessEquals = "<=";
+	private String greaterEquals = ">=" ;
 	private String euqals = "==";
 	private String notEquals = "!=";
 	
 	public Opr() {}
 	
-	public Opr(String less, String greater, String lessThan, String greaterThan, String euqals, String notEquals) {
+	public Opr(String lessThan, String greaterThan, String lessEquals, String greaterEquals, String euqals, String notEquals) {
 		super();
-		this.less = less;
-		this.greater = greater;
 		this.lessThan = lessThan;
 		this.greaterThan = greaterThan;
+		this.lessEquals = lessEquals;
+		this.greaterEquals = greaterEquals;
 		this.euqals = euqals;
 		this.notEquals = notEquals;
 	}
 
 	
-	public enum oprs{
-		less, greater, lessThan, greaterThan,euqals,notEquals;
-	}
-
-	public String getLess() {
-		return less;
-	}
-
-	public String getGreater() {
-		return greater;
-	}
-
 	public String getLessThan() {
 		return lessThan;
+	}
+
+	public void setLessThan(String lessThan) {
+		this.lessThan = lessThan;
 	}
 
 	public String getGreaterThan() {
 		return greaterThan;
 	}
 
+	public void setGreaterThan(String greaterThan) {
+		this.greaterThan = greaterThan;
+	}
+
+	public String getLessEquals() {
+		return lessEquals;
+	}
+
+	public void setLessEquals(String lessEquals) {
+		this.lessEquals = lessEquals;
+	}
+
+	public String getGreaterEquals() {
+		return greaterEquals;
+	}
+
+	public void setGreaterEquals(String greaterEquals) {
+		this.greaterEquals = greaterEquals;
+	}
+
 	public String getEuqals() {
 		return euqals;
+	}
+
+	public void setEuqals(String euqals) {
+		this.euqals = euqals;
 	}
 
 	public String getNotEquals() {
 		return notEquals;
 	}
+
+	public void setNotEquals(String notEquals) {
+		this.notEquals = notEquals;
+	}
+
+
+	public enum oprs{
+		lessThan, greaterThan, lessEquals, greaterEquals,euqals,notEquals;
+	}
+
+
 	
 }
