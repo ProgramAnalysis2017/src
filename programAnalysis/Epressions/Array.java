@@ -3,13 +3,13 @@ package programAnalysis.Epressions;
 public class Array extends Expressions {
 
 	private String arrayName;
-	private int index;
+	private Expressions index;
 	
 	public Array() {
 		super();
 	}
 	
-	public Array(String arrayName, int index) {
+	public Array(String arrayName, Expressions index) {
 		super();
 		this.arrayName = arrayName;
 		this.index = index;
@@ -18,8 +18,14 @@ public class Array extends Expressions {
 	public String getArrayName() {
 		return arrayName;
 	}
-	public int getIndex() {
+	public Expressions getIndex() {
 		return index;
+	}
+	
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return arrayName+"["+index+"]";
 	}
 	
 }

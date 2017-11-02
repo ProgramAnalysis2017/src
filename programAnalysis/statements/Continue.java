@@ -7,5 +7,9 @@ public class Continue extends Statements {
 	public String getCont() {
 		return cont;
 	}
-	
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return cont;
+	}
 }

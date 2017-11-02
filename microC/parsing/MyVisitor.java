@@ -10,6 +10,7 @@ import microC.parsing.MicroCParser.StmtContext;
 import programAnalysis.Declarations.DeclarationsSeqs;
 import programAnalysis.Declarations.IntArray;
 import programAnalysis.Declarations.IntX;
+import programAnalysis.Epressions.Array;
 import programAnalysis.Epressions.ExpressionOperations;
 import programAnalysis.Epressions.Expressions;
 import programAnalysis.Epressions.False;
@@ -21,11 +22,18 @@ import programAnalysis.operatiors.Opa;
 import programAnalysis.operatiors.Opb;
 import programAnalysis.operatiors.Opr;
 import programAnalysis.programs.Program;
+import programAnalysis.statements.Assignment;
+import programAnalysis.statements.AssignmentArray;
+import programAnalysis.statements.Break;
+import programAnalysis.statements.Continue;
 import programAnalysis.statements.If;
 import programAnalysis.statements.IfElse;
+import programAnalysis.statements.ReadArray;
+import programAnalysis.statements.ReadX;
 import programAnalysis.statements.Statements;
 import programAnalysis.statements.StatementsSeqs;
 import programAnalysis.statements.While;
+import programAnalysis.statements.Write;
 
 public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 
@@ -104,23 +112,23 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 		Pattern pattern = Pattern.compile("[a-zA-Z0-9;]*");
 		Matcher matcher = pattern.matcher(declaration);
 		if (!matcher.matches()) {
-	           String typeName = declaration.substring(0,3);
+	           //String typeName = declaration.substring(0,3);
 	           String arraySizeStr = declaration.substring(declaration.indexOf("[") + 1, declaration.indexOf("]"));
 	           String varName = declaration.substring(3, declaration.indexOf("["));
 	           int arraySize = Integer.parseInt(arraySizeStr);
-	           IntArray declArray = new IntArray(typeName,varName,arraySize);
-	           decs.setIntArray(declArray);
-	           System.out.println(typeName+" "+varName+"["+arraySize+"]");
+	           IntArray declArray = new IntArray(varName,arraySize);
+	           decs.setD1(declArray);
+	           
+	           System.out.println(declArray.toString());
 	    }else{    	
-	    	String typeName = declaration.substring(0,3);
+	    	//String typeName = declaration.substring(0,3);
 	    	String varName = declaration.substring(3,declaration.indexOf(";"));
-	    	int VarValue = 0;
-	    	IntX declVar = new IntX(typeName,varName,VarValue);
-	    	decs.setIntX(declVar);
-	    	System.out.println(typeName+" "+varName);
+	    	IntX declVar = new IntX(varName);
+	    	decs.setD1(declVar);
+	    	System.out.println(declVar.toString());
 	    }
 		if( null != ctx.decl()) {
-			decs.setD1( visitDecl(ctx.decl()) );
+			decs.setD2( visitDecl(ctx.decl()) );
 		}		
 		return decs; 	
 	}
@@ -140,76 +148,72 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 	@Override public StatementsSeqs visitStmt(MicroCParser.StmtContext ctx) { 
 		StatementsSeqs statements = new StatementsSeqs();
 		String basicStatement = ctx.basicStmt().getText();
-		//System.out.println(basicStatement);		
-		//basicStatement = "while(not false){if(A[i]+1>=0){readx;writex/y;readAa[2+5];continue;break;intx;intA[3];x=x+A[i];i=i+1;}else{i=i+1;break;}y=y+1;}";
-		//basicStatement = "while(not false){if(A[i]+1>=0){x=x+A[i];i=i+1;}y=y+1;}";
 		ProcessBasicBlock(basicStatement, statements);
 		if( null != ctx.stmt()) {
-			statements.setS1( visitStmt(ctx.stmt()) );
+			statements.setS1( visitStmt(ctx.stmt()));
 		}
-//		System.out.println("--------------------------------------------");
-//		String test = "y+z";
-//		Expressions expression = new Expressions();
-//		VariableX x = new VariableX("x");
-//		Opa add = new Opa();
-//		String op = add.getAdd();
-//		IntegerN n = new IntegerN(5);
-//		expression = new ExpressionOperations(x,op,n);
-//		System.out.println(expression.toString());
-//		expression = new ExpressionOperations(n,op,x);
-//		System.out.println(expression.toString());
-//		Expressions ex = getExpression(test);
-//		System.out.println(ex);
-		//getExpression(test, statements);
-//		System.out.println("--------------------------------------------");
 		return statements; 
 	}
 	
-	public void ProcessBasicBlock(String restBlocks, Statements statements){
+	public void ProcessBasicBlock(String restBlocks, StatementsSeqs statements){
 		if(restBlocks.toLowerCase().startsWith("while")){
+			System.out.println("While");
+			StatementsSeqs statementsSeqs = new StatementsSeqs();
+			statements = statementsSeqs;
+			
 			String whileConditionStr = foundCondition(restBlocks);
 			String whileBody = foundBody(restBlocks);
-			String temp_restBlocks = restBlocks.substring(whileConditionStr.length() + whileBody.length() + 9);
+			String restBlocks_afterWhile = restBlocks.substring(whileConditionStr.length() + whileBody.length() + 9);
+			
 			Expressions whileCondirion = getBoolExpression(whileConditionStr);			
 			While whileStatement = new While();
 			whileStatement.setB(whileCondirion);
-			System.out.println(whileCondirion.toString());
-			//System.out.println("While condition: "+whileCondirion.toString());
-			//System.out.println("While body: "+whileBody);
-			ProcessBasicBlock(whileBody,whileStatement.getS0());
-			if (temp_restBlocks.length() > 0){
-				ProcessBasicBlock(temp_restBlocks,statements);
-			}
 			
+			System.out.println(whileCondirion.toString());
+			ProcessBasicBlock(whileBody,whileStatement.getS0());
+		
+			statementsSeqs.setS1(whileStatement);
+			if (restBlocks_afterWhile.length() > 0){
+				ProcessBasicBlock(restBlocks_afterWhile,statements.getS2());
+			}
+			System.out.println("end");
 		}else if(restBlocks.toLowerCase().startsWith("if")){
+			System.out.println("if");
+			StatementsSeqs statementsSeqs = new StatementsSeqs();
+			statements = statementsSeqs;
 			String ifConditionStr = foundCondition(restBlocks);
 			String s0 = foundBody(restBlocks);
-			String temp_restBlocks = restBlocks.substring(ifConditionStr.length() + s0.length() + 6);
+			String restBlocks_afters0 = restBlocks.substring(ifConditionStr.length() + s0.length() + 6);
 			Expressions ifConditon = getBoolExpression(ifConditionStr);
 			System.out.println(ifConditon.toString());
-			//System.out.println("If condition: "+ifCondition);
-			//System.out.println("If body s0: "+s0);
+			
 			boolean ifElse = false;
-			if((temp_restBlocks.length() > 0) && temp_restBlocks.toLowerCase().startsWith("else")){
+			if((restBlocks_afters0.length() > 0) && restBlocks_afters0.toLowerCase().startsWith("else")){
 				ifElse = true;
 			}
 			if(!ifElse){
 				If ifStatement = new If();
-				ifStatement.setExpressions(ifConditon);	
+				ifStatement.setB(ifConditon);
 				ProcessBasicBlock(s0,ifStatement.getS0());
-				if (temp_restBlocks.length() > 0){
-					ProcessBasicBlock(temp_restBlocks,statements);
+				statementsSeqs.setS1(ifStatement);
+				System.out.println("end if");
+				if (restBlocks_afters0.length() > 0){
+					ProcessBasicBlock(restBlocks_afters0,statementsSeqs.getS2());
 				}
 			}else{
 				IfElse ifStatement = new IfElse();
-				ifStatement.setExpressions(ifConditon);	
+				ifStatement.setB(ifConditon);	
 				ProcessBasicBlock(s0,ifStatement.getS1());
-				String s2 = foundBody(temp_restBlocks);
+				String s2 = foundBody(restBlocks_afters0);
+				System.out.println("else");
 				ProcessBasicBlock(s2,ifStatement.getS2());
-				String restBlock_AfterS1 = temp_restBlocks.substring(s2.length() + 6);
-				if(restBlock_AfterS1.length() > 0){
-					ProcessBasicBlock(restBlock_AfterS1,statements);
+				statementsSeqs.setS1(ifStatement);
+				String restBlock_AfterS2 = restBlocks_afters0.substring(s2.length() + 6);
+				System.out.println("end if");
+				if(restBlock_AfterS2.length() > 0){
+					ProcessBasicBlock(restBlock_AfterS2,ifStatement.getS2());
 				}
+				
 			}										
 		}else if(restBlocks.toLowerCase().startsWith("read")){			
 			String basicBlock = restBlocks.substring(0, restBlocks.indexOf(";"));
@@ -218,112 +222,118 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 			Pattern pattern = Pattern.compile("[a-zA-Z0-9;]*");
 			Matcher matcher = pattern.matcher(basicBlock);
 			if (!matcher.matches()) {
-	            String read = basicBlock.substring(0,4);
-	            String arraySizeStr = basicBlock.substring(basicBlock.indexOf("[") + 1, basicBlock.indexOf("]"));
+	            //String read = basicBlock.substring(0,4);
+	            String arrayIndexStr = basicBlock.substring(basicBlock.indexOf("[") + 1, basicBlock.indexOf("]"));
 	            String varName = basicBlock.substring(4, basicBlock.indexOf("["));
 	            
-	            System.out.println(read+" "+varName+"["+arraySizeStr+"]");
+	            Expressions arrayIndex = getExpression(arrayIndexStr);
+	            ReadArray readArray = new ReadArray(varName,arrayIndex);    
+	            StatementsSeqs statementsSeqs = new StatementsSeqs();
+				statements = statementsSeqs;
+				statementsSeqs.setS1(readArray);
+	            System.out.println(readArray.toString());
+	            ProcessBasicBlock(rest,statementsSeqs.getS2());
 		    }else{
-				String read = basicBlock.substring(0,4);
-				String varName = basicBlock.substring(4);	
-				
-				System.out.println(read+" "+varName);				
-				//System.out.println("rest: "+ rest);
+				//String read = basicBlock.substring(0,4);
+				String varName = basicBlock.substring(4);				
+				ReadX readX = new ReadX(varName);						
+				StatementsSeqs statementsSeqs = new StatementsSeqs();
+				statements = statementsSeqs;
+				statementsSeqs.setS1(readX);
+				System.out.println(readX.toString());				
+				ProcessBasicBlock(rest,statementsSeqs.getS2());
 		    }	
-			ProcessBasicBlock(rest,statements);					
+								
 		}else if(restBlocks.toLowerCase().startsWith("write")){
+			StatementsSeqs statementsSeqs = new StatementsSeqs();
+			statements = statementsSeqs;
 			String basicBlock = restBlocks.substring(0, restBlocks.indexOf(";"));
 			String rest = restBlocks.substring(restBlocks.indexOf(";")+1);			
-			String write = basicBlock.substring(0,5);
-			String varName = basicBlock.substring(5);
-			
-			System.out.println(write+" "+varName);		
-			//System.out.println("rest: "+ rest);
-			ProcessBasicBlock(rest,statements);			
+			//String write = basicBlock.substring(0,5);
+			String expStr = basicBlock.substring(5);
+			Expressions exp = getExpression(expStr);			
+			Write writeExp = new Write(exp);
+			statementsSeqs.setS1(writeExp);		
+			System.out.println(writeExp.toString());
+			ProcessBasicBlock(rest,statementsSeqs.getS2());			
 		}else if(restBlocks.toLowerCase().startsWith("continue")){
-			String basicBlock = restBlocks.substring(0, restBlocks.indexOf(";"));
+			StatementsSeqs statementsSeqs = new StatementsSeqs();
+			statements = statementsSeqs;
+			//String basicBlock = restBlocks.substring(0, restBlocks.indexOf(";"));
 			String rest = restBlocks.substring(restBlocks.indexOf(";")+1);
-			
-			System.out.println(basicBlock);		
-			//System.out.println("rest: "+ rest);
-			ProcessBasicBlock(rest,statements);		
+			Continue con = new Continue();
+			statementsSeqs.setS1(con);
+			System.out.println(con.toString());	
+			ProcessBasicBlock(rest,statementsSeqs.getS2());		
 		}else if(restBlocks.toLowerCase().startsWith("break")){
+			StatementsSeqs statementsSeqs = new StatementsSeqs();
+			statements = statementsSeqs;
+			//String basicBlock = restBlocks.substring(0, restBlocks.indexOf(";"));
+			String rest = restBlocks.substring(restBlocks.indexOf(";")+1);
+			Break bre = new Break();
+			statementsSeqs.setS1(bre);
+			System.out.println(bre.toString());			
+			ProcessBasicBlock(rest,statementsSeqs.getS2());
+		}else if(restBlocks.toLowerCase().startsWith("int")){		// need to update	
+			StatementsSeqs statementsSeqs = new StatementsSeqs();
+			statements = statementsSeqs;
 			String basicBlock = restBlocks.substring(0, restBlocks.indexOf(";"));
 			String rest = restBlocks.substring(restBlocks.indexOf(";")+1);
 			
-			System.out.println(basicBlock);			
-			//System.out.println("rest: "+ rest);
-			ProcessBasicBlock(rest,statements);
-		}else if(restBlocks.toLowerCase().startsWith("int")){			
-			String basicBlock = restBlocks.substring(0, restBlocks.indexOf(";"));
-			String rest = restBlocks.substring(restBlocks.indexOf(";")+1);
 			Pattern pattern = Pattern.compile("[a-zA-Z0-9;]*");
 			Matcher matcher = pattern.matcher(basicBlock);
 			if (!matcher.matches()) {
-	           String typeName = basicBlock.substring(0,3);
+	           //String typeName = basicBlock.substring(0,3);
 	           String arraySizeStr = basicBlock.substring(basicBlock.indexOf("[") + 1, basicBlock.indexOf("]"));
 	           String varName = basicBlock.substring(3, basicBlock.indexOf("["));
 	           int arraySize = Integer.parseInt(arraySizeStr);
 	           
-	           System.out.println(typeName+" "+varName+"["+arraySize+"]");
-	           ProcessBasicBlock(rest,statements);
+	           IntArray intArray = new IntArray(varName,arraySize);
+	           statementsSeqs.setS1(intArray);
+	           
+	           System.out.println(intArray.toString());
+	           ProcessBasicBlock(rest,statementsSeqs.getS2());
 		    }else{    	
-		    	String typeName = basicBlock.substring(0,3);
+		    	//String typeName = basicBlock.substring(0,3);
 		    	String varName = basicBlock.substring(3);
-		    	int VarValue = 0;
 		    	
-		    	System.out.println(typeName+" "+varName);
-		    	ProcessBasicBlock(rest,statements);
+		    	IntX intX = new IntX(varName);
+		    	statementsSeqs.setS1(intX);
+		    	System.out.println(intX.toString());
+		    	ProcessBasicBlock(rest,statementsSeqs.getS2());
 		    }
 		}else{
 			// the rest blocks are assignments
 			if(restBlocks.length() > 0){
+				StatementsSeqs statementsSeqs = new StatementsSeqs();
+				statements = statementsSeqs;
+				
 				String basicBlock = restBlocks.substring(0, restBlocks.indexOf(";"));
 				String rest = restBlocks.substring(restBlocks.indexOf(";")+1);
 				
 				Pattern pattern = Pattern.compile("[a-zA-Z0-9;]*");
 				Matcher matcher = pattern.matcher(basicBlock);
 				if (!matcher.matches()) {
-					String varName = basicBlock.substring(0, restBlocks.indexOf("="));
-					String exp = basicBlock.substring(basicBlock.indexOf("=") + 1);
-		           
-		            System.out.println(varName + "=" + exp);
-		            
-		            Pattern patternExp = Pattern.compile("[a-zA-Z0-9;]*");
-					Matcher matcherExp = patternExp.matcher(exp);
-					if(!matcherExp.matches()){
-						int index_add = 0;
-						int index_sub = 0;
-						int index_mul = 0;
-						int index_div = 0;
-						if(exp.indexOf("+")>0){
-							index_add = exp.indexOf("+");
-							String firstVar = exp.substring(0, exp.indexOf("+"));
-							String secondVar = exp.substring(exp.indexOf("+")+1);
-						}
-						if(exp.indexOf("-")>0){
-							index_sub = exp.indexOf("-");
-							String firstVar = exp.substring(0, exp.indexOf("-"));
-							String secondVar = exp.substring(exp.indexOf("-")+1);
-						}
-						if(exp.indexOf("*")>0){
-							index_mul = exp.indexOf("*");
-							String firstVar = exp.substring(0, exp.indexOf("*"));
-							String secondVar = exp.substring(exp.indexOf("*")+1);
-						}
-						if(exp.indexOf("/")>0){
-							index_div = exp.indexOf("/");
-							String firstVar = exp.substring(0, exp.indexOf("/"));
-							String secondVar = exp.substring(exp.indexOf("/")+1);
-						}
-
-					}else{
-						
-					}
-		          
-			    }
-				ProcessBasicBlock(rest,statements);
-			}		
+					String leftSideStr = basicBlock.substring(0, restBlocks.indexOf("="));
+					String rightSideStr = basicBlock.substring(basicBlock.indexOf("=") + 1);				
+					Expressions exp = getExpression(rightSideStr);				
+					Matcher localMatcher = pattern.matcher(leftSideStr);
+					if (!localMatcher.matches()) {			
+						String arrayName = leftSideStr.substring(0, leftSideStr.indexOf("["));
+			            String arrayIndexStr = leftSideStr.substring(leftSideStr.indexOf("[") + 1, leftSideStr.indexOf("]"));	            
+			            Expressions arrayIndex = getExpression(arrayIndexStr);            
+			            AssignmentArray assArray = new AssignmentArray(arrayName,arrayIndex,arrayIndex); 
+			            statementsSeqs.setS1(assArray);
+			            System.out.println(assArray.toString());
+			            
+				    }else{			
+				    	Assignment assVar = new Assignment(leftSideStr,exp);	
+				    	statementsSeqs.setS1(assVar);
+				    	System.out.println(assVar.toString());
+				    }
+					ProcessBasicBlock(rest,statementsSeqs.getS2());
+				}		
+			}
 		}
 	}
 	
@@ -470,8 +480,6 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 			Opb op = new Opb();
 			String op_bool = op.getAnd();
 			expression = new ExpressionOperations(firstExp,op_bool,secondExp);
-			//statements.setExpreOp(expOpr);
-			//System.out.println(firstExpStr+op_bool+secondExpStr);
 		}else if((boolExp.indexOf("|")>=0)){
 			String firstExpStr = boolExp.substring(0, boolExp.indexOf("|"));
 			String secondExpStr = boolExp.substring(boolExp.indexOf("|")+1);
@@ -493,8 +501,6 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 			Opb op = new Opb();
 			String op_bool = op.getOr();
 			expression = new ExpressionOperations(firstExp,op_bool,secondExp);
-			//statements.setExpreOp(expOpr);
-			//System.out.println(firstExpStr+op_bool+secondExpStr);
 		}else if(boolExp.toLowerCase().startsWith("not")){
 			String not = boolExp.substring(0,3);
 			String exp = boolExp.substring(3);
@@ -503,8 +509,6 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 			}
 			Expressions expObj = getExpression(exp);
 			expression = new NotB(not,expObj);
-			//statements.setNotB(notB);
-			//System.out.println(notB.getNon()+exp);
 		}
 		else{
 			if((boolExp.indexOf("<")>=0) && (boolExp.indexOf("=")>=0)){
@@ -528,8 +532,6 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 				Opr op = new Opr();
 				String op_lessEquals = op.getLessEquals();
 				expression = new ExpressionOperations(firstExp,op_lessEquals,secondExp);
-				//statements.setExpreOp(expOpr);
-				//System.out.println(firstExpStr+op_lessEquals+secondExpStr);
 			}else if((boolExp.indexOf(">")>=0) && (boolExp.indexOf("=")>=0)){
 				String firstExpStr = boolExp.substring(0, boolExp.indexOf(">"));
 				String secondExpStr = boolExp.substring(boolExp.indexOf("=")+1);
@@ -551,8 +553,6 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 				Opr op = new Opr();
 				String op_greatEuqals = op.getGreaterEquals();
 				expression = new ExpressionOperations(firstExp,op_greatEuqals,secondExp);
-				//statements.setExpreOp(expOpr);
-				//System.out.println(firstExpStr+op_greatEuqals+secondExpStr);
 			}else if((boolExp.indexOf("!")>=0) && (boolExp.indexOf("=")>=0)){
 				String firstExpStr = boolExp.substring(0, boolExp.indexOf("!"));
 				String secondExpStr = boolExp.substring(boolExp.indexOf("=")+1);
@@ -574,8 +574,6 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 				Opr op = new Opr();
 				String op_notEquals = op.getNotEquals();
 				expression = new ExpressionOperations(firstExp,op_notEquals,secondExp);
-				//statements.setExpreOp(expOpr);
-				//System.out.println(firstExpStr+op_notEquals+secondExpStr);
 			}else if((boolExp.indexOf("<")>=0)){
 				String firstExpStr = boolExp.substring(0, boolExp.indexOf("<"));
 				String secondExpStr = boolExp.substring(boolExp.indexOf("<")+1);
@@ -597,8 +595,6 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 				Opr op = new Opr();
 				String op_lessThan = op.getLessThan();
 				expression = new ExpressionOperations(firstExp,op_lessThan,secondExp);
-				//statements.setExpreOp(expOpr);
-				//System.out.println(firstExpStr+op_lessThan+secondExpStr);
 			}else if((boolExp.indexOf(">")>=0)){
 				String firstExpStr = boolExp.substring(0, boolExp.indexOf(">"));
 				String secondExpStr = boolExp.substring(boolExp.indexOf(">")+1);
@@ -620,8 +616,6 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 				Opr op = new Opr();
 				String op_greatThan = op.getGreaterThan();
 				expression = new ExpressionOperations(firstExp,op_greatThan,secondExp);
-				//statements.setExpreOp(expOpr);
-				//System.out.println(firstExpStr+op_greatThan+secondExpStr);
 			}else if((boolExp.indexOf("=")>=0)){
 				String firstExpStr = boolExp.substring(0, boolExp.indexOf("="));
 				String secondExpStr = boolExp.substring(boolExp.indexOf("=")+2);
@@ -643,20 +637,15 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 				Opr op = new Opr();
 				String op_equals = op.getEuqals();
 				expression = new ExpressionOperations(firstExp,op_equals,secondExp);
-//				statements.setExpreOp(expOpr);
-//				System.out.println(firstExpStr+op_equals+secondExpStr);
 			}else if(boolExp.toLowerCase().startsWith("true")){
 				expression = new True();		
-				//statements.setTrue_t(trueExp);
-				//System.out.println(trueExp.getIsTrue());
 			}else if(boolExp.toLowerCase().startsWith("false")){
 				expression = new False();
-//				statements.setFalse_f(falseExp);
-//				System.out.println(falseExp.getIsFalse());
 			}				
 		}
 		return expression;
 	}
+		
 	public Expressions getExpression(String exp){
 		Expressions expression = new Expressions();
 		if(exp.indexOf("+")>=0){
@@ -664,97 +653,52 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 			String secondExpStr = exp.substring(exp.indexOf("+")+1);
 			Expressions firstExp;
 			Expressions secondExp;
-			if(isNumeric(firstExpStr)){
-				int n = Integer.parseInt(firstExpStr);
-				firstExp = new IntegerN(n);					
-			}else{
-				firstExp = new VariableX(firstExpStr);
-			}
 			
-			if(isNumeric(secondExpStr)){
-				int n = Integer.parseInt(secondExpStr);
-				secondExp = new IntegerN(n);					
-			}else{
-				secondExp = new VariableX(firstExpStr);
-			}
+			firstExp = getSingleExpression(firstExpStr);
+			secondExp = getSingleExpression(secondExpStr);
+			
 			Opa op = new Opa();
 			String op_add = op.getAdd();
 			expression = new ExpressionOperations(firstExp,op_add,secondExp);
-			//statements.setExpreOp(expOpra);
-			//System.out.println(firstExpStr+" "+op_add+" "+secondExpStr);
-			//return expOpra;
 		}else if(exp.indexOf("-")>=0){
 			String firstExpStr = exp.substring(0, exp.indexOf("-"));
 			String secondExpStr = exp.substring(exp.indexOf("-")+1);
 			Expressions firstExp;
 			Expressions secondExp;
-			if(isNumeric(firstExpStr)){
-				int n = Integer.parseInt(firstExpStr);
-				firstExp = new IntegerN(n);					
-			}else{
-				firstExp = new VariableX(firstExpStr);
-			}
+						
+			firstExp = getSingleExpression(firstExpStr);
+			secondExp = getSingleExpression(secondExpStr);
 			
-			if(isNumeric(secondExpStr)){
-				int n = Integer.parseInt(secondExpStr);
-				secondExp = new IntegerN(n);					
-			}else{
-				secondExp = new VariableX(firstExpStr);
-			}
 			Opa op = new Opa();
 			String op_sub = op.getMin();
 			expression = new ExpressionOperations(firstExp,op_sub,secondExp);
-			//statements.setExpreOp(expOpra);
-			//System.out.println(firstExpStr+" "+op_sub+" "+secondExpStr);
-			//return expOpra;
+
 		}else if(exp.indexOf("*")>=0){
 			String firstExpStr = exp.substring(0, exp.indexOf("*"));
 			String secondExpStr = exp.substring(exp.indexOf("*")+1);
 			Expressions firstExp;
 			Expressions secondExp;
-			if(isNumeric(firstExpStr)){
-				int n = Integer.parseInt(firstExpStr);
-				firstExp = new IntegerN(n);					
-			}else{
-				firstExp = new VariableX(firstExpStr);
-			}
 			
-			if(isNumeric(secondExpStr)){
-				int n = Integer.parseInt(secondExpStr);
-				secondExp = new IntegerN(n);					
-			}else{
-				secondExp = new VariableX(firstExpStr);
-			}
+			firstExp = getSingleExpression(firstExpStr);
+			secondExp = getSingleExpression(secondExpStr);
+			
 			Opa op = new Opa();
 			String op_multi = op.getMulti();
 			expression = new ExpressionOperations(firstExp,op_multi,secondExp);
-			//statements.setExpreOp(expOpra);
-			//System.out.println(firstExpStr+" "+op_multi+" "+secondExpStr);
-			//return expOpra;
+
 		}else if(exp.indexOf("/")>=0){			
 			String firstExpStr = exp.substring(0, exp.indexOf("/"));
 			String secondExpStr = exp.substring(exp.indexOf("/")+1);
 			Expressions firstExp;
 			Expressions secondExp;
-			if(isNumeric(firstExpStr)){
-				int n = Integer.parseInt(firstExpStr);
-				firstExp = new IntegerN(n);					
-			}else{
-				firstExp = new VariableX(firstExpStr);
-			}
 			
-			if(isNumeric(secondExpStr)){
-				int n = Integer.parseInt(secondExpStr);
-				secondExp = new IntegerN(n);					
-			}else{
-				secondExp = new VariableX(firstExpStr);
-			}
+			firstExp = getSingleExpression(firstExpStr);
+			secondExp = getSingleExpression(secondExpStr);
 			Opa op = new Opa();
 			String op_div = op.getDiv();
-			expression = new ExpressionOperations(firstExp,op_div,secondExp);
-			//statements.setExpreOp(expOpra);
-			//System.out.println(firstExpStr+" "+op_div+" "+secondExpStr);
-			//return expOpra;
+			expression = new ExpressionOperations(firstExp,op_div,secondExp);		
+		}else{
+			expression = getSingleExpression(exp);
 		}
 		return expression;
 	}
@@ -766,6 +710,26 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 	        if (!Character.isDigit(c)) return false;
 	    }
 	    return true;
+	}
+	
+	public Expressions getSingleExpression(String exp){
+		Expressions singlrExpression = new Expressions();
+		if(isNumeric(exp)){
+			int n = Integer.parseInt(exp);
+			singlrExpression = new IntegerN(n);					
+		}else{
+			Pattern pattern = Pattern.compile("[a-zA-Z0-9;]*");
+			Matcher matcher = pattern.matcher(exp);
+			if (!matcher.matches()) {			
+				String varName = exp.substring(0, exp.indexOf("["));
+	            String arrayIndexStr = exp.substring(exp.indexOf("[") + 1, exp.indexOf("]"));	            
+	            Expressions arrayIndex = getExpression(arrayIndexStr);            
+	            singlrExpression = new Array(varName,arrayIndex);               
+		    }else{			
+		    	singlrExpression = new VariableX(exp);				
+		    }	
+		}
+		return singlrExpression;
 	}
 	/**
 	 * {@inheritDoc}

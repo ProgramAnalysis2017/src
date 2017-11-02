@@ -2,7 +2,7 @@ package programAnalysis.Declarations;
 
 public class IntArray extends Declarations {
 
-	private String type;
+	private String type = "int";
 	private String arrayName;
 	private int size;
 	
@@ -31,5 +31,9 @@ public class IntArray extends Declarations {
 		return size;
 	}
 	
-	
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return type + " " + arrayName + "[" + size + "]";
+	}
 }

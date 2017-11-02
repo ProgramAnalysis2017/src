@@ -2,9 +2,24 @@ package programAnalysis.Declarations;
 
 public class IntX extends Declarations {
 	
-	private String type;
+	private String type = "int";
 	private String varName;
-	private int x;	
+	private int x = 0;	
+	
+	public IntX() {
+		super();
+	}
+	
+	public IntX(String varName) {
+		super();
+		this.varName = varName;
+	}
+	
+	public IntX(String type, String varName) {
+		super();
+		this.type = type;
+		this.varName = varName;
+	}
 	
 	public String getVarName() {
 		return varName;
@@ -22,24 +37,16 @@ public class IntX extends Declarations {
 		this.x = x;
 	}
 
-	public IntX() {}
-
-	public IntX(String type, String varName, int x) {
-		super();
-		this.type = type;
-		this.varName = varName;
-		this.x = x;
-	}
-	
-	public IntX(int x) {
-		super();
-		this.x = x;
-	}
-	
 	public String getType() {
 		return type;
 	}
 	public int getX() {
 		return x;
+	}
+	
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return type + " " + varName;
 	}
 }

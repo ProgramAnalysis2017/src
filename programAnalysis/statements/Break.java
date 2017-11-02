@@ -11,5 +11,9 @@ public class Break extends Statements {
 	public void setBre(String bre) {
 		this.bre = bre;
 	}
-	
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return bre;
+	}
 }

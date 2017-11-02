@@ -5,14 +5,14 @@ import programAnalysis.Epressions.Expressions;
 public class AssignmentArray extends Statements{
 
 	private String arrayName;
-	private int index;
+	private Expressions index;
 	private Expressions a;
 	
 	public AssignmentArray() {
 		super();
 	}
 	
-	public AssignmentArray(String arrayName, int index, Expressions a) {
+	public AssignmentArray(String arrayName, Expressions index, Expressions a) {
 		super();
 		this.arrayName = arrayName;
 		this.index = index;
@@ -22,7 +22,7 @@ public class AssignmentArray extends Statements{
 	public String getArrayName() {
 		return arrayName;
 	}
-	public int getIndex() {
+	public Expressions getIndex() {
 		return index;
 	}
 	public Expressions getA() {
@@ -33,7 +33,7 @@ public class AssignmentArray extends Statements{
 		this.arrayName = arrayName;
 	}
 
-	public void setIndex(int index) {
+	public void setIndex(Expressions index) {
 		this.index = index;
 	}
 

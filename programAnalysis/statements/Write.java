@@ -12,6 +12,10 @@ public class Write extends Statements{
 		this.write = write;
 		this.a = a;
 	}
+	public Write(Expressions a) {
+		super();
+		this.a = a;
+	}
 	public String getWrite() {
 		return write;
 	}
@@ -25,4 +29,9 @@ public class Write extends Statements{
 		this.a = a;
 	}
 	
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return write + " " + a;
+	}
 }
