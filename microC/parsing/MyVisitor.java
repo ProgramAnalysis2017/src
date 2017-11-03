@@ -1,6 +1,7 @@
 package microC.parsing;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -151,7 +152,7 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 		ProcessBasicBlock(basicStatement, statements);
 		if( null != ctx.stmt()) {
 			statements.setS1( visitStmt(ctx.stmt()));
-		}
+		}		
 		return statements; 
 	}
 	
@@ -226,7 +227,7 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 	            String arrayIndexStr = basicBlock.substring(basicBlock.indexOf("[") + 1, basicBlock.indexOf("]"));
 	            String varName = basicBlock.substring(4, basicBlock.indexOf("["));
 	            
-	            Expressions arrayIndex = getExpression(arrayIndexStr);
+	            Expressions arrayIndex = getExpressions(arrayIndexStr);
 	            ReadArray readArray = new ReadArray(varName,arrayIndex);    
 	            StatementsSeqs statementsSeqs = new StatementsSeqs();
 				statements = statementsSeqs;
@@ -251,7 +252,7 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 			String rest = restBlocks.substring(restBlocks.indexOf(";")+1);			
 			//String write = basicBlock.substring(0,5);
 			String expStr = basicBlock.substring(5);
-			Expressions exp = getExpression(expStr);			
+			Expressions exp = getExpressions(expStr);			
 			Write writeExp = new Write(exp);
 			statementsSeqs.setS1(writeExp);		
 			System.out.println(writeExp.toString());
@@ -316,12 +317,12 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 				if (!matcher.matches()) {
 					String leftSideStr = basicBlock.substring(0, restBlocks.indexOf("="));
 					String rightSideStr = basicBlock.substring(basicBlock.indexOf("=") + 1);				
-					Expressions exp = getExpression(rightSideStr);				
+					Expressions exp = getExpressions(rightSideStr);				
 					Matcher localMatcher = pattern.matcher(leftSideStr);
 					if (!localMatcher.matches()) {			
 						String arrayName = leftSideStr.substring(0, leftSideStr.indexOf("["));
 			            String arrayIndexStr = leftSideStr.substring(leftSideStr.indexOf("[") + 1, leftSideStr.indexOf("]"));	            
-			            Expressions arrayIndex = getExpression(arrayIndexStr);            
+			            Expressions arrayIndex = getExpressions(arrayIndexStr);            
 			            AssignmentArray assArray = new AssignmentArray(arrayName,arrayIndex,arrayIndex); 
 			            statementsSeqs.setS1(assArray);
 			            System.out.println(assArray.toString());
@@ -457,6 +458,66 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 		return body.substring(indexsLeft.get(0)+1, indexsRight.get(counter1-1));	
 	}
 	
+	public String foundArrayIndex(String body){
+		String temp_body = body;
+		List<Integer> indexsLeft = new ArrayList<Integer>();
+		List<Integer> indexsRight = new ArrayList<Integer>();
+		boolean foundBody = true;
+		boolean firstEntry = true;
+		while(foundBody){
+			if(temp_body.indexOf("[")>=0){
+				if(firstEntry){
+					firstEntry = false;
+					indexsLeft.add(temp_body.indexOf("["));
+				}else{
+					indexsLeft.add(temp_body.indexOf("[")+indexsLeft.get(indexsLeft.size()-1)+1);
+				}				
+				temp_body = temp_body.substring(temp_body.indexOf("[") + 1);
+			}else{
+				foundBody = false;
+			} 
+		}
+		temp_body = body;
+		foundBody = true;
+		firstEntry = true;
+		while(foundBody){
+			if(temp_body.indexOf("]")>=0){
+				if(firstEntry){
+					firstEntry = false;
+					indexsRight.add(temp_body.indexOf("]"));
+				}else{
+					indexsRight.add(temp_body.indexOf("]")+indexsRight.get(indexsRight.size()-1)+1);
+				}				
+				temp_body = temp_body.substring(temp_body.indexOf("]") + 1);
+			}else{
+				foundBody = false;
+			} 
+		}
+		int counter1 = 0;
+		int counter2 = 0;
+		int start = 0;
+		boolean notFound = true;
+		while(notFound){
+			counter1 = 0;
+			counter2 = 0;
+			for(int index : indexsLeft){
+				if(index < indexsRight.get(start)){
+					counter1++;
+				}
+			}
+			for(int index : indexsLeft){
+				if(index < indexsRight.get(counter1-1)){
+					counter2++;
+				}
+			}
+			if(counter1 == counter2){
+				notFound = false;
+			}
+			start++;
+		}
+		return body.substring(indexsLeft.get(0)+1, indexsRight.get(counter1-1));	
+	}
+	
 	public Expressions getBoolExpression(String boolExp){
 		Expressions expression = new Expressions();
 		if((boolExp.indexOf("&")>=0)){
@@ -507,7 +568,7 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 			if((exp.indexOf("(")>=0) || (exp.indexOf(")")>=0)){
 				exp = exp.substring(exp.indexOf("(") + 1,exp.indexOf(")"));
 			}
-			Expressions expObj = getExpression(exp);
+			Expressions expObj = getExpressions(exp);
 			expression = new NotB(not,expObj);
 		}
 		else{
@@ -645,63 +706,142 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 		}
 		return expression;
 	}
-		
-	public Expressions getExpression(String exp){
+	
+	public Expressions getExpressions(String exp){
 		Expressions expression = new Expressions();
-		if(exp.indexOf("+")>=0){
-			String firstExpStr = exp.substring(0, exp.indexOf("+"));
-			String secondExpStr = exp.substring(exp.indexOf("+")+1);
-			Expressions firstExp;
-			Expressions secondExp;
+		List<Integer> indexList = new ArrayList<Integer>();
+		int index_array_L = 0;
+		int index_array_R = 0;	
+		for(int i=0;i<exp.toCharArray().length;i++)
+		{
+		    if(exp.toCharArray()[i] == '+'){
+		    	indexList.add(i);
+		    }else if(exp.toCharArray()[i] == '-'){
+		    	indexList.add(i);
+		    }else if(exp.toCharArray()[i] == '*'){
+		    	indexList.add(i);
+		    }else if(exp.toCharArray()[i] == '/'){
+		    	indexList.add(i);
+		    }
+		}
+		if(indexList.size()>0){
+			Collections.sort(indexList);
+			index_array_L = exp.indexOf("[");
+			index_array_R = exp.indexOf("]");
+			List<Integer> temp_indexList = new ArrayList<Integer>(indexList);
 			
-			firstExp = getSingleExpression(firstExpStr);
-			secondExp = getSingleExpression(secondExpStr);
-			
-			Opa op = new Opa();
-			String op_add = op.getAdd();
-			expression = new ExpressionOperations(firstExp,op_add,secondExp);
-		}else if(exp.indexOf("-")>=0){
-			String firstExpStr = exp.substring(0, exp.indexOf("-"));
-			String secondExpStr = exp.substring(exp.indexOf("-")+1);
-			Expressions firstExp;
-			Expressions secondExp;
-						
-			firstExp = getSingleExpression(firstExpStr);
-			secondExp = getSingleExpression(secondExpStr);
-			
-			Opa op = new Opa();
-			String op_sub = op.getMin();
-			expression = new ExpressionOperations(firstExp,op_sub,secondExp);
-
-		}else if(exp.indexOf("*")>=0){
-			String firstExpStr = exp.substring(0, exp.indexOf("*"));
-			String secondExpStr = exp.substring(exp.indexOf("*")+1);
-			Expressions firstExp;
-			Expressions secondExp;
-			
-			firstExp = getSingleExpression(firstExpStr);
-			secondExp = getSingleExpression(secondExpStr);
-			
-			Opa op = new Opa();
-			String op_multi = op.getMulti();
-			expression = new ExpressionOperations(firstExp,op_multi,secondExp);
-
-		}else if(exp.indexOf("/")>=0){			
-			String firstExpStr = exp.substring(0, exp.indexOf("/"));
-			String secondExpStr = exp.substring(exp.indexOf("/")+1);
-			Expressions firstExp;
-			Expressions secondExp;
-			
-			firstExp = getSingleExpression(firstExpStr);
-			secondExp = getSingleExpression(secondExpStr);
-			Opa op = new Opa();
-			String op_div = op.getDiv();
-			expression = new ExpressionOperations(firstExp,op_div,secondExp);		
+			for(int i=0;i<temp_indexList.size();i++){
+				//System.out.println(i);
+				if((index_array_L>0)&&(temp_indexList.get(0)>index_array_L)){
+					if(temp_indexList.get(i) < index_array_R){
+						indexList.remove(i);
+					}
+				}					
+			}
+			if(indexList.size()>0){
+				String firstExpStr = exp.substring(0, indexList.get(0));
+				//System.out.println("firstExpStr: "+ firstExpStr);
+				String secondExpStr = exp.substring(indexList.get(0)+1);
+				//System.out.println("secondExpStr: "+ secondExpStr);
+				
+				Expressions firstExp;
+				Expressions secondExp;
+				Opa operators = new Opa();
+				String op;				
+				firstExp = getSingleExpression(firstExpStr);
+				if(isNumeric(secondExpStr)){
+					int result = Integer.parseInt(secondExpStr);
+					secondExp = new IntegerN(result);
+				}else if(isVariable(secondExpStr)){
+					secondExp = new VariableX(secondExpStr);					
+				}else{
+					secondExp = getExpressions(secondExpStr);
+				}
+				if(exp.charAt(indexList.get(0)) == '+'){
+					op = operators.getAdd();
+				}else if(exp.charAt(indexList.get(0)) == '-'){
+					op = operators.getMin();
+				}else if(exp.charAt(indexList.get(0)) == '*'){
+					op = operators.getMulti();
+				}else{ //if(exp.charAt(indexList.get(0)) == '/'){
+					op = operators.getDiv();
+				}
+				expression = new ExpressionOperations(firstExp,op,secondExp);
+			}else{
+				expression = getSingleExpression(exp);
+			}		
 		}else{
 			expression = getSingleExpression(exp);
-		}
+		}								
 		return expression;
 	}
+	
+	public boolean isVariable(String basicElement){
+		Pattern pattern = Pattern.compile("[a-zA-Z0-9]*");
+		Matcher matcher = pattern.matcher(basicElement);
+		if (matcher.matches()) {			
+            return true;
+	    }else{
+	    	return false;
+	    }		
+	}
+		
+//	public Expressions getExpression(String exp){
+//		Expressions expression = new Expressions();
+//		if(exp.indexOf("+")>=0){
+//			String firstExpStr = exp.substring(0, exp.indexOf("+"));
+//			String secondExpStr = exp.substring(exp.indexOf("+")+1);
+//			Expressions firstExp;
+//			Expressions secondExp;
+//			
+//			firstExp = getSingleExpression(firstExpStr);
+//			secondExp = getSingleExpression(secondExpStr);
+//			
+//			Opa op = new Opa();
+//			String op_add = op.getAdd();
+//			expression = new ExpressionOperations(firstExp,op_add,secondExp);
+//		}else if(exp.indexOf("-")>=0){
+//			String firstExpStr = exp.substring(0, exp.indexOf("-"));
+//			String secondExpStr = exp.substring(exp.indexOf("-")+1);
+//			Expressions firstExp;
+//			Expressions secondExp;
+//						
+//			firstExp = getSingleExpression(firstExpStr);
+//			secondExp = getSingleExpression(secondExpStr);
+//			
+//			Opa op = new Opa();
+//			String op_sub = op.getMin();
+//			expression = new ExpressionOperations(firstExp,op_sub,secondExp);
+//
+//		}else if(exp.indexOf("*")>=0){
+//			String firstExpStr = exp.substring(0, exp.indexOf("*"));
+//			String secondExpStr = exp.substring(exp.indexOf("*")+1);
+//			Expressions firstExp;
+//			Expressions secondExp;
+//			
+//			firstExp = getSingleExpression(firstExpStr);
+//			secondExp = getSingleExpression(secondExpStr);
+//			
+//			Opa op = new Opa();
+//			String op_multi = op.getMulti();
+//			expression = new ExpressionOperations(firstExp,op_multi,secondExp);
+//
+//		}else if(exp.indexOf("/")>=0){			
+//			String firstExpStr = exp.substring(0, exp.indexOf("/"));
+//			String secondExpStr = exp.substring(exp.indexOf("/")+1);
+//			Expressions firstExp;
+//			Expressions secondExp;
+//			
+//			firstExp = getSingleExpression(firstExpStr);
+//			secondExp = getSingleExpression(secondExpStr);
+//			Opa op = new Opa();
+//			String op_div = op.getDiv();
+//			expression = new ExpressionOperations(firstExp,op_div,secondExp);		
+//		}else{
+//			expression = getSingleExpression(exp);
+//		}
+//		return expression;
+//	}
 	
 	public boolean isNumeric(String str)
 	{
@@ -722,8 +862,9 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 			Matcher matcher = pattern.matcher(exp);
 			if (!matcher.matches()) {			
 				String varName = exp.substring(0, exp.indexOf("["));
-	            String arrayIndexStr = exp.substring(exp.indexOf("[") + 1, exp.indexOf("]"));	            
-	            Expressions arrayIndex = getExpression(arrayIndexStr);            
+				String arrayIndexStr = foundArrayIndex(exp);
+	            //String arrayIndexStr = exp.substring(exp.indexOf("[") + 1, exp.indexOf("]"));	            
+	            Expressions arrayIndex = getExpressions(arrayIndexStr);            
 	            singlrExpression = new Array(varName,arrayIndex);               
 		    }else{			
 		    	singlrExpression = new VariableX(exp);				

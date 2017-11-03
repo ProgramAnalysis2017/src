@@ -30,7 +30,7 @@ public class ExpressionOperations extends Expressions {
 	@Override
 	public String toString() {
 		// TODO Auto-generated method stub
-		return a1 + " " + operator + " " + a2;
+		return a1 + operator + a2;
 	}
 	public Expressions getA1() {
 		return a1;
