@@ -13,6 +13,9 @@ public class Statements {
 	public void setExpressions(Expressions expressions) {
 		this.expressions = expressions;
 	}
-
+	
+	public String getX() {
+		return "statements";
+	}
 
 }

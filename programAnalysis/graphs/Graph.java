@@ -14,6 +14,10 @@ import programAnalysis.Epressions.VariableX;
 import programAnalysis.operatiors.Opa;
 import programAnalysis.operatiors.Opr;
 import programAnalysis.programs.Program;
+import programAnalysis.Declarations.Declarations;
+import programAnalysis.Declarations.DeclarationsSeqs;
+import programAnalysis.Declarations.IntArray;
+import programAnalysis.Declarations.IntX;
 import programAnalysis.Epressions.ExpressionOperations;
 import programAnalysis.Epressions.Expressions;
 import programAnalysis.Epressions.IntegerN;
@@ -42,7 +46,7 @@ public class Graph {
 
 	public static void main(String[] args) {
 		Graph g = new Graph();
-		g.initData();
+		g.initData(g.getProgram());
 		System.out.println(g.getLabels());
 		System.out.println(g.getFlows());
 		
@@ -74,7 +78,7 @@ public class Graph {
 		}
 	}
 	
-	public void initData() {
+	public void initData(Program program) {
 		VariableX v1 = new VariableX("x");
 		VariableX v2 = new VariableX("y");
 		Statements l1 = new Assignment(v1.getX(), new IntegerN(5));// x:= 5
@@ -104,9 +108,37 @@ public class Graph {
 		vars.add(v1);
 		vars.add(v2);
 		
+		if(null != program.getDeclarations()) {
+			recDeclarations(program.getDeclarations());
+		} else if(null != program.getStatements()) {
+			recStatements(program.getStatements());
+		}
+		
+		
+		
+		
+		
 		initFlows();
 	}
 	
+	private void recDeclarations(Declarations declarations) {
+		if(declarations instanceof DeclarationsSeqs) {
+			DeclarationsSeqs dSeqs = (DeclarationsSeqs) declarations;
+			if(dSeqs.getD1() instanceof IntArray) {
+				
+				
+				data.add(dSeqs.getD1());
+			} else if(dSeqs.getD1() instanceof IntX) {
+				
+				
+				data.add(dSeqs.getD1());
+			}
+			if(null != dSeqs.getD2() && dSeqs.getD2() instanceof DeclarationsSeqs) {
+				recDeclarations(dSeqs.getD2());
+			}
+		}
+	}
+
 	public void initFlows() {
 		for(int i=0; i<data.size(); i++) {
 			exit ++;
@@ -439,6 +471,14 @@ public class Graph {
 
 	public void setRDexit(ArrayList<ArrayList<String>> rDexit) {
 		RDexit = rDexit;
+	}
+
+	public Program getProgram() {
+		return program;
+	}
+
+	public void setProgram(Program program) {
+		this.program = program;
 	} 
 	
 }
