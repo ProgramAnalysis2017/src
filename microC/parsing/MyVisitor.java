@@ -78,16 +78,19 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
 	@Override public DeclarationsSeqs visitDecl(MicroCParser.DeclContext ctx) { 
-		DeclarationsSeqs decs = new DeclarationsSeqs();
-		String declaration = ctx.basicDecl().getText();//get the first statement of a list of statement;
-//		System.out.println(ctx.getText());
-//		System.out.println(ctx.decl().getText());
-//		System.out.println(ctx.basicDecl().getText());
-		if(!( "".equals(ctx.decl().getText()) ) || null != ctx.decl().getText()) {
-			decs.setD1( visitDecl(ctx.decl()) );
+		//DeclarationsSeqs decs = new DeclarationsSeqs();
+		Declarations decs = new Declarations();
+		if (ctx.getText() != null) { 
+			//System.out.println("not null");
+			decs.setD1();
+			decs.getD1();
+			ctx.basicDecl().getText();
 		}
-		
-		return decs; 
+/*		System.out.println(ctx.getText());				//entire declaration
+		String declaration = ctx.basicDecl().getText();	//get the first declaration and remove from the list
+		System.out.println(declaration);
+		System.out.println(ctx.decl().getText());	   //rest declaration of the list
+*/		return decs; 
 		
 	}
 	/**
@@ -199,6 +202,6 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitInteger(MicroCParser.IntegerContext ctx) { return visitChildren(ctx); }
+	@Override public IntX visitInteger(MicroCParser.IntegerContext ctx) { return visitChildren(ctx); }
 	
 }
