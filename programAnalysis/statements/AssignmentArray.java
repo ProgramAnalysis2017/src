@@ -40,5 +40,9 @@ public class AssignmentArray extends Statements{
 	public void setA(Expressions a) {
 		this.a = a;
 	}
-	
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return arrayName + "[" + index + "]" + " := " + a;
+	}
 }
