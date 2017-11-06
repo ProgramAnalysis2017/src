@@ -8,6 +8,7 @@ import java.util.regex.Pattern;
 
 import microC.parsing.MicroCParser.DeclContext;
 import microC.parsing.MicroCParser.StmtContext;
+import microC.parsing.MicroCParser.WhileStmtContext;
 import programAnalysis.Declarations.DeclarationsSeqs;
 import programAnalysis.Declarations.IntArray;
 import programAnalysis.Declarations.IntX;
@@ -149,10 +150,12 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 	@Override public StatementsSeqs visitStmt(MicroCParser.StmtContext ctx) { 
 		StatementsSeqs statements = new StatementsSeqs();
 		String basicStatement = ctx.basicStmt().getText();
+		//WhileStmtContext whileStmt = ctx.basicStmt().whileStmt();
+		//While myWhile =visitWhileStmt(whileStmt);
 		ProcessBasicBlock(basicStatement, statements);
 		if( null != ctx.stmt()) {
-			statements.setS1( visitStmt(ctx.stmt()));
-		}		
+			statements.setS2( visitStmt(ctx.stmt()));
+		}
 		return statements; 
 	}
 	
@@ -160,7 +163,7 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 		if(restBlocks.toLowerCase().startsWith("while")){
 			System.out.println("While");
 			StatementsSeqs statementsSeqs = new StatementsSeqs();
-			statements = statementsSeqs;
+			statements.setS1(statementsSeqs);
 			
 			String whileConditionStr = foundCondition(restBlocks);
 			String whileBody = foundBody(restBlocks);
@@ -169,13 +172,12 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 			Expressions whileCondirion = getBoolExpression(whileConditionStr);			
 			While whileStatement = new While();
 			whileStatement.setB(whileCondirion);
-			
-			System.out.println(whileCondirion.toString());
+			statementsSeqs.setS1(whileStatement);
 			ProcessBasicBlock(whileBody,whileStatement.getS0());
 		
-			statementsSeqs.setS1(whileStatement);
+			
 			if (restBlocks_afterWhile.length() > 0){
-				ProcessBasicBlock(restBlocks_afterWhile,statements.getS2());
+				ProcessBasicBlock(restBlocks_afterWhile,statementsSeqs.getS2());
 			}
 			System.out.println("end");
 		}else if(restBlocks.toLowerCase().startsWith("if")){
@@ -920,7 +922,11 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitWhileStmt(MicroCParser.WhileStmtContext ctx) { return visitChildren(ctx); }
+	@Override public While visitWhileStmt(MicroCParser.WhileStmtContext ctx) {
+
+		While myWhile = new While();
+		return myWhile;
+	}
 	/**
 	 * {@inheritDoc}
 	 *

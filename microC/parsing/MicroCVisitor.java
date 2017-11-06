@@ -5,6 +5,7 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 import programAnalysis.Declarations.DeclarationsSeqs;
 import programAnalysis.programs.Program;
 import programAnalysis.statements.StatementsSeqs;
+import programAnalysis.statements.While;
 
 /**
  * This interface defines a complete generic visitor for a parse tree produced
@@ -127,7 +128,7 @@ public interface MicroCVisitor<T> extends ParseTreeVisitor<T> {
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitWhileStmt(MicroCParser.WhileStmtContext ctx);
+	While visitWhileStmt(MicroCParser.WhileStmtContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MicroCParser#blockStmt}.
 	 * @param ctx the parse tree

@@ -7,12 +7,19 @@ import java.util.Map;
 import programAnalysis.statements.Statements;
 import programAnalysis.statements.StatementsSeqs;
 import programAnalysis.statements.While;
+import programAnalysis.statements.Write;
 import programAnalysis.statements.Assignment;
 import programAnalysis.statements.If;
 import programAnalysis.statements.IfElse;
+import programAnalysis.statements.ReadX;
 import programAnalysis.Epressions.VariableX;
 import programAnalysis.operatiors.Opa;
 import programAnalysis.operatiors.Opr;
+import programAnalysis.programs.Program;
+import programAnalysis.Declarations.Declarations;
+import programAnalysis.Declarations.DeclarationsSeqs;
+import programAnalysis.Declarations.IntArray;
+import programAnalysis.Declarations.IntX;
 import programAnalysis.Epressions.ExpressionOperations;
 import programAnalysis.Epressions.Expressions;
 import programAnalysis.Epressions.IntegerN;
@@ -33,13 +40,15 @@ public class Graph {
 	private int whileConditionLabel = 0;
 	private int labelSum;
 	
+	private Program program;
+	
 	private ArrayList<ArrayList<String>> RDo = new ArrayList<ArrayList<String>>();
 	private ArrayList<ArrayList<String>> RDexit = new ArrayList<ArrayList<String>>();
 	
 
 	public static void main(String[] args) {
 		Graph g = new Graph();
-		g.initData();
+		g.initData(g.getProgram());
 		System.out.println(g.getLabels());
 		System.out.println(g.getFlows());
 		
@@ -71,8 +80,8 @@ public class Graph {
 		}
 	}
 	
-	public void initData() {
-		VariableX v1 = new VariableX("x");
+	public void initData(Program program) {
+		/*VariableX v1 = new VariableX("x");
 		VariableX v2 = new VariableX("y");
 		Statements l1 = new Assignment(v1.getX(), new IntegerN(5));// x:= 5
 		Statements l2 = new Assignment(v2.getX(), new IntegerN(1)); // y:= 1
@@ -99,11 +108,62 @@ public class Graph {
 		data.add(l6);
 
 		vars.add(v1);
-		vars.add(v2);
+		vars.add(v2);*/
+		
+		
+		if(null != program.getDeclarations()) {
+			recDeclarations(program.getDeclarations());
+		}
+		if(null != program.getStatements()) {
+			recStatements(program.getStatements());
+		}
 		
 		initFlows();
 	}
+
+	private void recDeclarations(Declarations declarations) {
+		// TODO Auto-generated method stub
+		DeclarationsSeqs dSeqs = (DeclarationsSeqs) declarations;
+		//put d1 into data list
+		if(dSeqs.getD1() instanceof IntX) {
+			data.add((IntX)dSeqs.getD1());
+		} else if(dSeqs.getD1() instanceof IntArray) {
+			data.add((IntArray)dSeqs.getD1());
+		}
+		// recursive d2
+		if(null != dSeqs.getD2() && dSeqs.getD2() instanceof DeclarationsSeqs) {
+			recDeclarations((DeclarationsSeqs)dSeqs.getD2());
+		}
+	}
 	
+	private void recStatements(Statements statements) {
+		// TODO Auto-generated method stub
+		StatementsSeqs sSeqs = (StatementsSeqs) statements;
+		//System.out.println((StatementsSeqs)sSeqs.getS1());
+		//((StatementsSeqs)sSeqs.getS1()).getS1()
+		if(((StatementsSeqs)sSeqs.getS1()).getS1() instanceof Assignment) {
+			System.out.println("???????????????");
+			data.add((Assignment)sSeqs.getS1());
+		} else if(((StatementsSeqs)sSeqs.getS1()).getS1() instanceof While) {
+			System.out.println("???????????????");
+			data.add((While)((StatementsSeqs)sSeqs.getS1()).getS1());
+		} else if(sSeqs.getS1() instanceof If) {
+			data.add((If)sSeqs.getS1());
+		} else if(sSeqs.getS1() instanceof IfElse) {
+			System.out.println("???????????????");
+			data.add((IfElse)sSeqs.getS1());
+		} else if(sSeqs.getS1() instanceof ReadX) {
+			data.add((ReadX)sSeqs.getS1());
+		} else if(sSeqs.getS1() instanceof Write) {
+			data.add((Write)sSeqs.getS1());
+		}
+		
+		if(null != sSeqs.getS2()) {
+			recStatements(sSeqs.getS2());
+		}
+		
+	}
+
 	public void initFlows() {
 		for(int i=0; i<data.size(); i++) {
 			exit ++;
@@ -436,6 +496,14 @@ public class Graph {
 
 	public void setRDexit(ArrayList<ArrayList<String>> rDexit) {
 		RDexit = rDexit;
+	}
+
+	public Program getProgram() {
+		return program;
+	}
+
+	public void setProgram(Program program) {
+		this.program = program;
 	} 
 	
 }

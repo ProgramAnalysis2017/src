@@ -5,6 +5,7 @@ import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 import programAnalysis.Declarations.DeclarationsSeqs;
 import programAnalysis.programs.Program;
 import programAnalysis.statements.StatementsSeqs;
+import programAnalysis.statements.While;
 
 /**
  * This class provides an empty implementation of {@link MicroCVisitor},
@@ -149,7 +150,7 @@ public class MicroCBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitWhileStmt(MicroCParser.WhileStmtContext ctx) { return visitChildren(ctx); }
+	@Override public While visitWhileStmt(MicroCParser.WhileStmtContext ctx) { return (While) visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

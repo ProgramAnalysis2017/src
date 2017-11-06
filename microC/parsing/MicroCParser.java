@@ -1441,8 +1441,8 @@ public class MicroCParser extends Parser {
 			if ( listener instanceof MicroCListener ) ((MicroCListener)listener).exitWhileStmt(this);
 		}
 		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof MicroCVisitor ) return ((MicroCVisitor<? extends T>)visitor).visitWhileStmt(this);
+		public <While> While accept(ParseTreeVisitor<? extends While> visitor) {
+			if ( visitor instanceof MicroCVisitor ) return (While) ((MicroCVisitor<? extends While>)visitor).visitWhileStmt(this);
 			else return visitor.visitChildren(this);
 		}
 	}
