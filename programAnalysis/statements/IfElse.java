@@ -40,5 +40,11 @@ public class IfElse extends Statements {
 	public void setS2(StatementsSeqs s2) {
 		this.s2 = s2;
 	}
+	
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return b + " s1: " + s1 + "-- s2: " + s2;
+	}
 
 }

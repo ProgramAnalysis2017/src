@@ -6,7 +6,6 @@ public class While extends Statements {
 
 	private Expressions b;
 	private StatementsSeqs s0;
-	private String w = "";
 	
 	public While() {}
 
@@ -30,14 +29,6 @@ public class While extends Statements {
 
 	public void setS0(StatementsSeqs s0) {
 		this.s0 = s0;
-	}
-
-	public String getW() {
-		return w;
-	}
-
-	public void setW(String w) {
-		this.w = w;
 	}
 
 }

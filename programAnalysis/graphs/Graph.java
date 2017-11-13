@@ -3,14 +3,19 @@ package programAnalysis.graphs;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import programAnalysis.statements.Statements;
 import programAnalysis.statements.StatementsSeqs;
 import programAnalysis.statements.While;
 import programAnalysis.statements.Write;
 import programAnalysis.statements.Assignment;
+import programAnalysis.statements.Break;
+import programAnalysis.statements.Continue;
 import programAnalysis.statements.If;
 import programAnalysis.statements.IfElse;
+import programAnalysis.statements.ReadArray;
 import programAnalysis.statements.ReadX;
 import programAnalysis.Epressions.VariableX;
 import programAnalysis.operatiors.Opa;
@@ -22,7 +27,10 @@ import programAnalysis.Declarations.IntArray;
 import programAnalysis.Declarations.IntX;
 import programAnalysis.Epressions.ExpressionOperations;
 import programAnalysis.Epressions.Expressions;
+import programAnalysis.Epressions.False;
 import programAnalysis.Epressions.IntegerN;
+import programAnalysis.Epressions.NotB;
+import programAnalysis.Epressions.True;
 
 public class Graph {
 	
@@ -37,7 +45,7 @@ public class Graph {
 	private ArrayList<VariableX> vars = new ArrayList<VariableX>(); //recording how many variables they have
 	private int entry = 0;
 	private int exit = 0;
-	private int whileConditionLabel = 0;
+	private int conditionLabel = 0;
 	private int labelSum;
 	
 	private Program program;
@@ -127,8 +135,18 @@ public class Graph {
 		//put d1 into data list
 		if(dSeqs.getD1() instanceof IntX) {
 			data.add((IntX)dSeqs.getD1());
+			IntX intx = (IntX)dSeqs.getD1();
+			if( insideVars(intx.getVarName()) ) {
+				vars.add(new VariableX(intx.getVarName()));
+			}
+			
 		} else if(dSeqs.getD1() instanceof IntArray) {
 			data.add((IntArray)dSeqs.getD1());
+			IntArray intArray = (IntArray)dSeqs.getD1();
+			//System.out.println("this is array name " + intArray.getArrayName());
+			if(insideVars(intArray.getArrayName())) {
+				vars.add(new VariableX(intArray.getArrayName()));
+			}
 		}
 		// recursive d2
 		if(null != dSeqs.getD2() && dSeqs.getD2() instanceof DeclarationsSeqs) {
@@ -139,23 +157,32 @@ public class Graph {
 	private void recStatements(Statements statements) {
 		// TODO Auto-generated method stub
 		StatementsSeqs sSeqs = (StatementsSeqs) statements;
-		//System.out.println((StatementsSeqs)sSeqs.getS1());
+		//System.out.println(sSeqs.getS1());
 		//((StatementsSeqs)sSeqs.getS1()).getS1()
-		if(((StatementsSeqs)sSeqs.getS1()).getS1() instanceof Assignment) {
-			System.out.println("???????????????");
+		if(sSeqs.getS1() instanceof Assignment) {
 			data.add((Assignment)sSeqs.getS1());
-		} else if(((StatementsSeqs)sSeqs.getS1()).getS1() instanceof While) {
-			System.out.println("???????????????");
-			data.add((While)((StatementsSeqs)sSeqs.getS1()).getS1());
+			Assignment tempAss = (Assignment)sSeqs.getS1();
+			if(insideVars(tempAss.getX())) {
+				vars.add(new VariableX(tempAss.getX()));
+			}
+		} else if(sSeqs.getS1() instanceof While) {
+			data.add((While)sSeqs.getS1());
 		} else if(sSeqs.getS1() instanceof If) {
 			data.add((If)sSeqs.getS1());
 		} else if(sSeqs.getS1() instanceof IfElse) {
-			System.out.println("???????????????");
 			data.add((IfElse)sSeqs.getS1());
 		} else if(sSeqs.getS1() instanceof ReadX) {
 			data.add((ReadX)sSeqs.getS1());
 		} else if(sSeqs.getS1() instanceof Write) {
 			data.add((Write)sSeqs.getS1());
+		} else if(sSeqs.getS1() instanceof Continue) {
+			data.add((Continue)sSeqs.getS1());
+		} else if(sSeqs.getS1() instanceof Break) {
+			data.add((Break)sSeqs.getS1());
+		} else if(sSeqs.getS1() instanceof ReadX) {
+			data.add((ReadX)sSeqs.getS1());
+		} else if(sSeqs.getS1() instanceof ReadArray) {
+			data.add((ReadArray)sSeqs.getS1());
 		}
 		
 		if(null != sSeqs.getS2()) {
@@ -164,47 +191,92 @@ public class Graph {
 		
 	}
 
+	//verify if a variable exists in the vars list
+	private boolean insideVars(String x) {
+		// TODO Auto-generated method stub
+		for(int i=0; i<vars.size(); i++) {
+			//verify if the variable exists in the vars list by the comparing the String x of VariableX
+			if( x.equals(((VariableX)vars.get(i)).getX()) ) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	public void initFlows() {
 		for(int i=0; i<data.size(); i++) {
 			exit ++;
-			if(data.get(i) instanceof Assignment) {
+			if(data.get(i) instanceof While) {
+				While w = (While) data.get(i);
+				conditionLabel = exit;
+				labels.put(exit, w.getB() );
+				flows.add( new Flow(exit-1,exit) );
+				exit = handleStatements(exit+1, 0, w.getS0());
+				flows.add( new Flow(exit,conditionLabel) );
+			} else if(data.get(i) instanceof If) {
+				//same as while
+				If ifStamtment = (If) data.get(i);
+				conditionLabel = exit;
+				labels.put(exit, ifStamtment.getB() );
+				flows.add( new Flow(exit-1,exit) );
+				exit = handleStatements(exit+1, 0, ifStamtment.getS0());
+				conditionLabel = 0;
+			} else if(data.get(i) instanceof IfElse) {
+				//same as while but the flow of the else should start with the condition
+				IfElse ifElse = (IfElse) data.get(i);
+				conditionLabel = exit;
+				labels.put(exit, ifElse.getB() );
+				flows.add( new Flow(exit-1,exit) );
+				exit = handleStatements(exit+1, 0, ifElse.getS1());
+				if(null != ifElse.getS2()) {
+					exit = handleStatements(exit+1, conditionLabel, ifElse.getS2());
+				}
+			} else {
 				labels.put(exit, data.get(i));
 				if(entry != 0) {
 					Flow f = new Flow(entry,exit);
 					flows.add(f);
 				}
-			} else if(data.get(i) instanceof While) {
-				While w = (While) data.get(i);
-				ExpressionOperations condition = (ExpressionOperations) w.getB();
-				whileConditionLabel = exit;
-				labels.put(exit, condition);
-				flows.add( new Flow(exit-1,exit) );
-				exit = handleStatements(exit+1, w.getS0());
-				flows.add( new Flow(exit,whileConditionLabel) );
-			} else if(data.get(i) instanceof If) {
-				//same as while
-			} else if(data.get(i) instanceof IfElse) {
-				//same as while
 			}
 			
-			if(whileConditionLabel == 0) {
+			if(conditionLabel == 0) {
 				entry = exit;
 			} else {
-				entry = whileConditionLabel;
+				entry = conditionLabel;
 			}
 		}
 		labelSum = exit; //recording how many labels the program has
 	}
 
-	private int handleStatements(int label, Statements s0) {
+	/**
+	 * 
+	 * @param label is the current label and the flow should be (label-1, label)
+	 * @param conditionLabel is the condition label used for ifelse. The flow of else should start with the condition 
+	 * @param s0 is the body
+	 * @return
+	 */
+	private int handleStatements(int label, int conditionLabel, Statements s0) {
 		if(s0 instanceof StatementsSeqs) {
-			label = handleStatements(label,((StatementsSeqs)s0).getS1());
-			label = handleStatements(label+1,((StatementsSeqs)s0).getS2());
-		}else if(s0 instanceof Assignment) {
+			if(null != ((StatementsSeqs)s0).getS1()) {
+				label = handleStatements(label,conditionLabel,((StatementsSeqs)s0).getS1());
+			}
+			if(null != ((StatementsSeqs)s0).getS2()) {
+				label = handleStatements(label+1,0,((StatementsSeqs)s0).getS2());
+			}
+		} else if(s0 instanceof Assignment || 
+				s0 instanceof Break || 
+				s0 instanceof Continue ||
+				s0 instanceof Write) {
 			labels.put(label, s0);
-			Flow f = new Flow(label-1,label);
+			Flow f;
+			if(conditionLabel != 0) {
+				f = new Flow(conditionLabel,label);
+			}else {
+				f = new Flow(label-1,label);
+			}
+			
 			flows.add(f);
-		} 
+		}
 		return label;
 	}
 
@@ -213,21 +285,48 @@ public class Graph {
 	 */
 	public void initKG() {
 		for (Map.Entry<Integer, Object> entry : labels.entrySet()) {
+			//System.out.println("labels type is " + entry.getValue());
 			if(entry.getValue() instanceof Assignment) {
 				Assignment assignment = (Assignment) entry.getValue();
-				//for Kill
-				ArrayList<Kill> ks = getKillList(assignment.getX());
-				kill.put(entry.getKey(), ks);
-				//for Gen
-				ArrayList<Gen> gs = new ArrayList<Gen>();
-				Gen g = new Gen(assignment.getX(), entry.getKey() + "");
-				gs.add(g);
-				gen.put(entry.getKey(), gs);
-			} else if(entry.getValue() instanceof ExpressionOperations) {
-				kill.put(entry.getKey(), null);// it is null for expression
+				Pattern pattern = Pattern.compile("[A-Z;]*");
+				Matcher matcher = pattern.matcher(assignment.getX());
+				if(matcher.matches()) {
+					kill.put(entry.getKey(), null);//assignment of Array does not kill anything
+					//for Gen
+					ArrayList<Gen> gs = new ArrayList<Gen>();
+					Gen g = new Gen(assignment.getX(), entry.getKey() + "");
+					gs.add(g);
+					gen.put(entry.getKey(), gs);
+				} else {
+					auxiliaryIntiKG(entry, assignment.getX());
+				}
+			} else if(entry.getValue() instanceof ExpressionOperations || 
+					  entry.getValue() instanceof True || 
+					  entry.getValue() instanceof False || 
+					  entry.getValue() instanceof NotB || 
+					  entry.getValue() instanceof Write || 
+					  entry.getValue() instanceof Break || 
+					  entry.getValue() instanceof Continue ) {
+				kill.put(entry.getKey(), null); // it is null for expression or break or continue or write
 				gen.put(entry.getKey(), null);
+			} else if(entry.getValue() instanceof IntX) {
+				auxiliaryIntiKG(entry, ((IntX)entry.getValue()).getVarName());
+			} else if(entry.getValue() instanceof IntArray) {
+				auxiliaryIntiKG(entry, ((IntArray)entry.getValue()).getArrayName());
 			}
 		}
+	}
+
+	private void auxiliaryIntiKG(Map.Entry<Integer, Object> entry, String s) {
+		//for Kill
+		//for normal assignment
+		ArrayList<Kill> ks = getKillList(s);
+		kill.put(entry.getKey(), ks);
+		//for Gen
+		ArrayList<Gen> gs = new ArrayList<Gen>();
+		Gen g = new Gen(s, entry.getKey() + "");
+		gs.add(g);
+		gen.put(entry.getKey(), gs);
 	}
 	
 	private ArrayList<Kill> getKillList(String x) {
@@ -245,7 +344,7 @@ public class Graph {
 	}
 
 	public void algorithmMatrix() {
-		ArrayList<String> RDo1 = new ArrayList<String>();
+		/*ArrayList<String> RDo1 = new ArrayList<String>();
 		for(int i=0; i<vars.size(); i++) {
 			RDo1.add(vars.get(i) + "?");
 		}
@@ -259,7 +358,19 @@ public class Graph {
 		RDo.add(RDo3);
 		RDo.add(RDo4);
 		RDo.add(RDo5);
-		RDo.add(RDo6);
+		RDo.add(RDo6);*/
+		
+		if( labelSum>0 ) {
+			for (int i = 1; i <= labelSum; i++) {
+				ArrayList<String> RDoN = new ArrayList<String>();
+				RDo.add(RDoN);
+			}
+		}
+		
+		for(int j=0; j<vars.size(); j++) {
+			RDo.get(0).add(vars.get(j).getX() + "?");
+		}
+		
 		System.out.println(flows + "  | " + RDo);
 		algorithm(RDo);
 	}
@@ -442,14 +553,6 @@ public class Graph {
 		this.exit = exit;
 	}
 
-	public int getWhileConditionLabel() {
-		return whileConditionLabel;
-	}
-
-	public void setWhileConditionLabel(int whileConditionLabel) {
-		this.whileConditionLabel = whileConditionLabel;
-	}
-
 	public HashMap<Integer, ArrayList<Kill>> getKill() {
 		return kill;
 	}
@@ -504,6 +607,14 @@ public class Graph {
 
 	public void setProgram(Program program) {
 		this.program = program;
+	}
+
+	public int getConditionLabel() {
+		return conditionLabel;
+	}
+
+	public void setConditionLabel(int conditionLabel) {
+		this.conditionLabel = conditionLabel;
 	} 
 	
 }

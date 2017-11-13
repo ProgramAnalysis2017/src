@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 
 import microC.parsing.MicroCParser.DeclContext;
 import microC.parsing.MicroCParser.StmtContext;
-import microC.parsing.MicroCParser.WhileStmtContext;
+import programAnalysis.Declarations.Declarations;
 import programAnalysis.Declarations.DeclarationsSeqs;
 import programAnalysis.Declarations.IntArray;
 import programAnalysis.Declarations.IntX;
@@ -45,7 +45,11 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitAexpr(MicroCParser.AexprContext ctx) { return visitChildren(ctx); }
+	@Override public Expressions visitAexpr(MicroCParser.AexprContext ctx) { 
+		String exp = ctx.getText();
+		Expressions expression = getExpressions(exp);								
+		return expression;	
+	}
 	/**
 	 * {@inheritDoc}
 	 *
@@ -73,7 +77,13 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitBexpr(MicroCParser.BexprContext ctx) { return visitChildren(ctx); }
+	@Override public Expressions visitBexpr(MicroCParser.BexprContext ctx) { 
+		//Expressions boolExpression = new Expressions();
+		String expressionStr = ctx.getText();	
+		Expressions expression = getBoolExpression(expressionStr);		
+		System.out.println(expression.toString()); 
+		return expression; 
+	}
 	/**
 	 * {@inheritDoc}
 	 *
@@ -101,7 +111,25 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitBasicDecl(MicroCParser.BasicDeclContext ctx) { return visitChildren(ctx); }
+	@Override public Declarations visitBasicDecl(MicroCParser.BasicDeclContext ctx) { 
+		String basicDeclStr = ctx.getText();
+		//System.out.println(basicDeclStr);			
+		Declarations basicDecl = new Declarations();	
+		Pattern pattern = Pattern.compile("[a-zA-Z0-9;]*");
+		Matcher matcher = pattern.matcher(basicDeclStr);
+		if (!matcher.matches()) {
+	           String arraySizeStr = basicDeclStr.substring(basicDeclStr.indexOf("[") + 1, basicDeclStr.indexOf("]"));
+	           String varName = ctx.identifier().getText();
+	           int arraySize = Integer.parseInt(arraySizeStr);
+	           basicDecl = new IntArray(varName,arraySize);
+	           //System.out.println(basicDecl.toString());
+	    }else{    	
+	    	String varName = ctx.identifier().getText();
+	    	basicDecl = new IntX(varName);
+	    	System.out.println(basicDecl.toString());
+	    }	
+		return basicDecl; 		
+	}
 	/**
 	 * {@inheritDoc}
 	 *
@@ -110,25 +138,8 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 	 */
 	@Override public DeclarationsSeqs visitDecl(MicroCParser.DeclContext ctx) { 
 		DeclarationsSeqs decs = new DeclarationsSeqs();
-		String declaration = ctx.basicDecl().getText();//get the first statement of a list of statement;
-		Pattern pattern = Pattern.compile("[a-zA-Z0-9;]*");
-		Matcher matcher = pattern.matcher(declaration);
-		if (!matcher.matches()) {
-	           //String typeName = declaration.substring(0,3);
-	           String arraySizeStr = declaration.substring(declaration.indexOf("[") + 1, declaration.indexOf("]"));
-	           String varName = declaration.substring(3, declaration.indexOf("["));
-	           int arraySize = Integer.parseInt(arraySizeStr);
-	           IntArray declArray = new IntArray(varName,arraySize);
-	           decs.setD1(declArray);
-	           
-	           System.out.println(declArray.toString());
-	    }else{    	
-	    	//String typeName = declaration.substring(0,3);
-	    	String varName = declaration.substring(3,declaration.indexOf(";"));
-	    	IntX declVar = new IntX(varName);
-	    	decs.setD1(declVar);
-	    	System.out.println(declVar.toString());
-	    }
+		Declarations basicDecl= visitBasicDecl(ctx.basicDecl());
+		decs.setD1(basicDecl);
 		if( null != ctx.decl()) {
 			decs.setD2( visitDecl(ctx.decl()) );
 		}		
@@ -140,7 +151,28 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitBasicStmt(MicroCParser.BasicStmtContext ctx) { return visitChildren(ctx); }
+	@Override public Statements visitBasicStmt(MicroCParser.BasicStmtContext ctx) { 
+		Statements basicStatement = new Statements();
+		String statement = ctx.getText();
+		//System.out.println(statement);
+		if(statement.toLowerCase().startsWith("while")){
+			basicStatement = visitWhileStmt(ctx.whileStmt());
+		}else if(statement.toLowerCase().startsWith("if")){
+			basicStatement = visitIfelseStmt(ctx.ifelseStmt());		
+		}else if(statement.toLowerCase().startsWith("read")){	
+			basicStatement = visitReadStmt(ctx.readStmt());			
+		}else if(statement.toLowerCase().startsWith("write")){
+			basicStatement = visitWriteStmt(ctx.writeStmt());		
+		}else if(statement.toLowerCase().startsWith("continue")){
+			basicStatement = visitContinueStmt(ctx.continueStmt());
+		}else if(statement.toLowerCase().startsWith("break")){
+			basicStatement = visitBreakStmt(ctx.breakStmt());
+		}else{	
+			// the rest blocks are assignments
+			basicStatement = visitAssignStmt(ctx.assignStmt());		
+		}		
+		return basicStatement; 
+	}
 	/**
 	 * {@inheritDoc}
 	 *
@@ -149,316 +181,195 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 	 */
 	@Override public StatementsSeqs visitStmt(MicroCParser.StmtContext ctx) { 
 		StatementsSeqs statements = new StatementsSeqs();
-		String basicStatement = ctx.basicStmt().getText();
-		//WhileStmtContext whileStmt = ctx.basicStmt().whileStmt();
-		//While myWhile =visitWhileStmt(whileStmt);
-		ProcessBasicBlock(basicStatement, statements);
+		Statements basicStatement = visitBasicStmt(ctx.basicStmt());
+		statements.setS1(basicStatement);
 		if( null != ctx.stmt()) {
 			statements.setS2( visitStmt(ctx.stmt()));
-		}
+		}		
 		return statements; 
 	}
-	
-	public void ProcessBasicBlock(String restBlocks, StatementsSeqs statements){
-		if(restBlocks.toLowerCase().startsWith("while")){
-			System.out.println("While");
-			StatementsSeqs statementsSeqs = new StatementsSeqs();
-			statements.setS1(statementsSeqs);
-			
-			String whileConditionStr = foundCondition(restBlocks);
-			String whileBody = foundBody(restBlocks);
-			String restBlocks_afterWhile = restBlocks.substring(whileConditionStr.length() + whileBody.length() + 9);
-			
-			Expressions whileCondirion = getBoolExpression(whileConditionStr);			
-			While whileStatement = new While();
-			whileStatement.setB(whileCondirion);
-			statementsSeqs.setS1(whileStatement);
-			ProcessBasicBlock(whileBody,whileStatement.getS0());
-		
-			
-			if (restBlocks_afterWhile.length() > 0){
-				ProcessBasicBlock(restBlocks_afterWhile,statementsSeqs.getS2());
-			}
-			System.out.println("end");
-		}else if(restBlocks.toLowerCase().startsWith("if")){
-			System.out.println("if");
-			StatementsSeqs statementsSeqs = new StatementsSeqs();
-			statements = statementsSeqs;
-			String ifConditionStr = foundCondition(restBlocks);
-			String s0 = foundBody(restBlocks);
-			String restBlocks_afters0 = restBlocks.substring(ifConditionStr.length() + s0.length() + 6);
-			Expressions ifConditon = getBoolExpression(ifConditionStr);
-			System.out.println(ifConditon.toString());
-			
-			boolean ifElse = false;
-			if((restBlocks_afters0.length() > 0) && restBlocks_afters0.toLowerCase().startsWith("else")){
-				ifElse = true;
-			}
-			if(!ifElse){
-				If ifStatement = new If();
-				ifStatement.setB(ifConditon);
-				ProcessBasicBlock(s0,ifStatement.getS0());
-				statementsSeqs.setS1(ifStatement);
-				System.out.println("end if");
-				if (restBlocks_afters0.length() > 0){
-					ProcessBasicBlock(restBlocks_afters0,statementsSeqs.getS2());
-				}
-			}else{
-				IfElse ifStatement = new IfElse();
-				ifStatement.setB(ifConditon);	
-				ProcessBasicBlock(s0,ifStatement.getS1());
-				String s2 = foundBody(restBlocks_afters0);
-				System.out.println("else");
-				ProcessBasicBlock(s2,ifStatement.getS2());
-				statementsSeqs.setS1(ifStatement);
-				String restBlock_AfterS2 = restBlocks_afters0.substring(s2.length() + 6);
-				System.out.println("end if");
-				if(restBlock_AfterS2.length() > 0){
-					ProcessBasicBlock(restBlock_AfterS2,ifStatement.getS2());
-				}
-				
-			}										
-		}else if(restBlocks.toLowerCase().startsWith("read")){			
-			String basicBlock = restBlocks.substring(0, restBlocks.indexOf(";"));
-			String rest = restBlocks.substring(restBlocks.indexOf(";")+1);
-			
-			Pattern pattern = Pattern.compile("[a-zA-Z0-9;]*");
-			Matcher matcher = pattern.matcher(basicBlock);
-			if (!matcher.matches()) {
-	            //String read = basicBlock.substring(0,4);
-	            String arrayIndexStr = basicBlock.substring(basicBlock.indexOf("[") + 1, basicBlock.indexOf("]"));
-	            String varName = basicBlock.substring(4, basicBlock.indexOf("["));
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public Statements visitAssignStmt(MicroCParser.AssignStmtContext ctx) { 
+		Statements statement = new Statements();	
+		String assignmentStr =  ctx.getText();
+		String leftSideStr = ctx.identifier().getText();
+		//System.out.println(assignmentStr);					
+		String basicAssignment = assignmentStr.substring(0, assignmentStr.indexOf(";"));			
+		Pattern pattern = Pattern.compile("[a-zA-Z0-9;]*");
+		Matcher matcher = pattern.matcher(basicAssignment);
+		if (!matcher.matches()) {
+			String rightSideStr = basicAssignment.substring(basicAssignment.indexOf("=") + 1);				
+			Expressions exp = getExpressions(rightSideStr);				
+			Matcher localMatcher = pattern.matcher(leftSideStr);
+			if (!localMatcher.matches()) {			
+				String arrayName = leftSideStr.substring(0, leftSideStr.indexOf("["));
+	            String arrayIndexStr = leftSideStr.substring(leftSideStr.indexOf("[") + 1, leftSideStr.indexOf("]"));	            
+	            Expressions arrayIndex = getExpressions(arrayIndexStr);            
+	            statement = new AssignmentArray(arrayName,arrayIndex,exp); 
+	            System.out.println(statement.toString());
 	            
-	            Expressions arrayIndex = getExpressions(arrayIndexStr);
-	            ReadArray readArray = new ReadArray(varName,arrayIndex);    
-	            StatementsSeqs statementsSeqs = new StatementsSeqs();
-				statements = statementsSeqs;
-				statementsSeqs.setS1(readArray);
-	            System.out.println(readArray.toString());
-	            ProcessBasicBlock(rest,statementsSeqs.getS2());
-		    }else{
-				//String read = basicBlock.substring(0,4);
-				String varName = basicBlock.substring(4);				
-				ReadX readX = new ReadX(varName);						
-				StatementsSeqs statementsSeqs = new StatementsSeqs();
-				statements = statementsSeqs;
-				statementsSeqs.setS1(readX);
-				System.out.println(readX.toString());				
-				ProcessBasicBlock(rest,statementsSeqs.getS2());
-		    }	
-								
-		}else if(restBlocks.toLowerCase().startsWith("write")){
-			StatementsSeqs statementsSeqs = new StatementsSeqs();
-			statements = statementsSeqs;
-			String basicBlock = restBlocks.substring(0, restBlocks.indexOf(";"));
-			String rest = restBlocks.substring(restBlocks.indexOf(";")+1);			
-			//String write = basicBlock.substring(0,5);
-			String expStr = basicBlock.substring(5);
-			Expressions exp = getExpressions(expStr);			
-			Write writeExp = new Write(exp);
-			statementsSeqs.setS1(writeExp);		
-			System.out.println(writeExp.toString());
-			ProcessBasicBlock(rest,statementsSeqs.getS2());			
-		}else if(restBlocks.toLowerCase().startsWith("continue")){
-			StatementsSeqs statementsSeqs = new StatementsSeqs();
-			statements = statementsSeqs;
-			//String basicBlock = restBlocks.substring(0, restBlocks.indexOf(";"));
-			String rest = restBlocks.substring(restBlocks.indexOf(";")+1);
-			Continue con = new Continue();
-			statementsSeqs.setS1(con);
-			System.out.println(con.toString());	
-			ProcessBasicBlock(rest,statementsSeqs.getS2());		
-		}else if(restBlocks.toLowerCase().startsWith("break")){
-			StatementsSeqs statementsSeqs = new StatementsSeqs();
-			statements = statementsSeqs;
-			//String basicBlock = restBlocks.substring(0, restBlocks.indexOf(";"));
-			String rest = restBlocks.substring(restBlocks.indexOf(";")+1);
-			Break bre = new Break();
-			statementsSeqs.setS1(bre);
-			System.out.println(bre.toString());			
-			ProcessBasicBlock(rest,statementsSeqs.getS2());
-		}else if(restBlocks.toLowerCase().startsWith("int")){		// need to update	
-			StatementsSeqs statementsSeqs = new StatementsSeqs();
-			statements = statementsSeqs;
-			String basicBlock = restBlocks.substring(0, restBlocks.indexOf(";"));
-			String rest = restBlocks.substring(restBlocks.indexOf(";")+1);
-			
-			Pattern pattern = Pattern.compile("[a-zA-Z0-9;]*");
-			Matcher matcher = pattern.matcher(basicBlock);
-			if (!matcher.matches()) {
-	           //String typeName = basicBlock.substring(0,3);
-	           String arraySizeStr = basicBlock.substring(basicBlock.indexOf("[") + 1, basicBlock.indexOf("]"));
-	           String varName = basicBlock.substring(3, basicBlock.indexOf("["));
-	           int arraySize = Integer.parseInt(arraySizeStr);
-	           
-	           IntArray intArray = new IntArray(varName,arraySize);
-	           statementsSeqs.setS1(intArray);
-	           
-	           System.out.println(intArray.toString());
-	           ProcessBasicBlock(rest,statementsSeqs.getS2());
-		    }else{    	
-		    	//String typeName = basicBlock.substring(0,3);
-		    	String varName = basicBlock.substring(3);
-		    	
-		    	IntX intX = new IntX(varName);
-		    	statementsSeqs.setS1(intX);
-		    	System.out.println(intX.toString());
-		    	ProcessBasicBlock(rest,statementsSeqs.getS2());
+		    }else{			
+		    	statement = new Assignment(leftSideStr,exp);	
+		    	System.out.println(statement.toString());
 		    }
+		}		
+		return statement; 
+	}
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public Continue visitContinueStmt(MicroCParser.ContinueStmtContext ctx) { 
+		Continue continueStatement = new Continue();
+		System.out.println(continueStatement.toString());
+		return continueStatement; 		
+	}
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public Statements visitReadStmt(MicroCParser.ReadStmtContext ctx) { 
+		String readStatementstr = ctx.getText();
+		Statements readStatement = new Statements();		
+		Pattern pattern = Pattern.compile("[a-zA-Z0-9;]*");
+		Matcher matcher = pattern.matcher(readStatementstr);
+		if (!matcher.matches()) {
+			String arrayName = ctx.identifier().getText();
+			Expressions indexExp = visitAexpr(ctx.aexpr());
+			readStatement = new ReadArray(arrayName,indexExp);
+	        System.out.println(readStatement.toString());
+	    }else{    	
+	    	String varName = ctx.identifier().getText();
+	    	readStatement= new ReadX(varName);
+	    	System.out.println(readStatement.toString());
+	    }		
+		return readStatement; 		
+	}
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public Break visitBreakStmt(MicroCParser.BreakStmtContext ctx) {
+		Break breakStatement = new Break();
+		System.out.println(breakStatement);
+		return breakStatement; 
+	}
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public Statements visitWriteStmt(MicroCParser.WriteStmtContext ctx) { 
+		Statements statement = new Statements();
+		String writeStatementStr = ctx.getText();
+		String expStr = writeStatementStr.substring(5,writeStatementStr.indexOf(";"));
+		Expressions exp = getExpressions(expStr);			
+		statement = new Write(exp);	
+		System.out.println(statement.toString());		
+		return statement; 
+	}
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public Statements visitIfelseStmt(MicroCParser.IfelseStmtContext ctx) { 
+		System.out.println("if");
+		Statements ifStatement = new Statements();
+		String IfstatementStr = ctx.getText();
+		String ifConditionStr = ctx.bexpr().getText();
+		Expressions ifCondition= visitBexpr(ctx.bexpr());
+		StatementsSeqs ifBody = visitStmt(ctx.stmt(0));
+		String s0 = ctx.stmt(0).getText();
+		String restBlocks_afters0 = IfstatementStr.substring(ifConditionStr.length() + s0.length() + 6);
+		boolean ifElse = false;
+		if((restBlocks_afters0.length() > 0) && restBlocks_afters0.toLowerCase().startsWith("else")){
+			ifElse = true;
+		}
+		if(!ifElse){			
+			ifStatement = new If(ifCondition,ifBody);
+			//System.out.println("end if");
 		}else{
-			// the rest blocks are assignments
-			if(restBlocks.length() > 0){
-				StatementsSeqs statementsSeqs = new StatementsSeqs();
-				statements = statementsSeqs;
-				
-				String basicBlock = restBlocks.substring(0, restBlocks.indexOf(";"));
-				String rest = restBlocks.substring(restBlocks.indexOf(";")+1);
-				
-				Pattern pattern = Pattern.compile("[a-zA-Z0-9;]*");
-				Matcher matcher = pattern.matcher(basicBlock);
-				if (!matcher.matches()) {
-					String leftSideStr = basicBlock.substring(0, restBlocks.indexOf("="));
-					String rightSideStr = basicBlock.substring(basicBlock.indexOf("=") + 1);				
-					Expressions exp = getExpressions(rightSideStr);				
-					Matcher localMatcher = pattern.matcher(leftSideStr);
-					if (!localMatcher.matches()) {			
-						String arrayName = leftSideStr.substring(0, leftSideStr.indexOf("["));
-			            String arrayIndexStr = leftSideStr.substring(leftSideStr.indexOf("[") + 1, leftSideStr.indexOf("]"));	            
-			            Expressions arrayIndex = getExpressions(arrayIndexStr);            
-			            AssignmentArray assArray = new AssignmentArray(arrayName,arrayIndex,arrayIndex); 
-			            statementsSeqs.setS1(assArray);
-			            System.out.println(assArray.toString());
-			            
-				    }else{			
-				    	Assignment assVar = new Assignment(leftSideStr,exp);	
-				    	statementsSeqs.setS1(assVar);
-				    	System.out.println(assVar.toString());
-				    }
-					ProcessBasicBlock(rest,statementsSeqs.getS2());
-				}		
-			}
-		}
+			StatementsSeqs elseBody = visitStmt(ctx.stmt(1));
+			ifStatement = new IfElse(ifCondition,ifBody,elseBody);
+			//System.out.println("end if");
+		}	
+		
+		return ifStatement; 
 	}
-	
-	public String foundBody(String body){
-		String temp_body = body;
-		List<Integer> indexsLeft = new ArrayList<Integer>();
-		List<Integer> indexsRight = new ArrayList<Integer>();
-		boolean foundBody = true;
-		boolean firstEntry = true;
-		while(foundBody){
-			if(temp_body.indexOf("{")>=0){
-				if(firstEntry){
-					firstEntry = false;
-					indexsLeft.add(temp_body.indexOf("{"));
-				}else{
-					indexsLeft.add(temp_body.indexOf("{")+indexsLeft.get(indexsLeft.size()-1)+1);
-				}				
-				temp_body = temp_body.substring(temp_body.indexOf("{") + 1);
-			}else{
-				foundBody = false;
-			} 
-		}
-		temp_body = body;
-		foundBody = true;
-		firstEntry = true;
-		while(foundBody){
-			if(temp_body.indexOf("}")>=0){
-				if(firstEntry){
-					firstEntry = false;
-					indexsRight.add(temp_body.indexOf("}"));
-				}else{
-					indexsRight.add(temp_body.indexOf("}")+indexsRight.get(indexsRight.size()-1)+1);
-				}				
-				temp_body = temp_body.substring(temp_body.indexOf("}") + 1);
-			}else{
-				foundBody = false;
-			} 
-		}
-		int counter1 = 0;
-		int counter2 = 0;
-		int start = 0;
-		boolean notFound = true;
-		while(notFound){
-			counter1 = 0;
-			counter2 = 0;
-			for(int index : indexsLeft){
-				if(index < indexsRight.get(start)){
-					counter1++;
-				}
-			}
-			for(int index : indexsLeft){
-				if(index < indexsRight.get(counter1-1)){
-					counter2++;
-				}
-			}
-			if(counter1 == counter2){
-				notFound = false;
-			}
-			start++;
-		}
-		return body.substring(indexsLeft.get(0)+1, indexsRight.get(counter1-1));	
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public While visitWhileStmt(MicroCParser.WhileStmtContext ctx) { 		
+		//System.out.println("While");
+		Expressions whileCondition = visitBexpr(ctx.bexpr());	
+		StatementsSeqs whileBody = visitStmt(ctx.stmt());
+		While newWhile = new While();
+		newWhile.setB(whileCondition);
+		newWhile.setS0(whileBody);
+		//System.out.println("endWhile");
+		return newWhile; 
 	}
-	
-	public String foundCondition(String body){
-		String temp_body = body;
-		List<Integer> indexsLeft = new ArrayList<Integer>();
-		List<Integer> indexsRight = new ArrayList<Integer>();
-		boolean foundBody = true;
-		boolean firstEntry = true;
-		while(foundBody){
-			if(temp_body.indexOf("(")>=0){
-				if(firstEntry){
-					firstEntry = false;
-					indexsLeft.add(temp_body.indexOf("("));
-				}else{
-					indexsLeft.add(temp_body.indexOf("(")+indexsLeft.get(indexsLeft.size()-1)+1);
-				}				
-				temp_body = temp_body.substring(temp_body.indexOf("(") + 1);
-			}else{
-				foundBody = false;
-			} 
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitBlockStmt(MicroCParser.BlockStmtContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public Program visitProgram(MicroCParser.ProgramContext ctx) { 
+		//System.out.println(ctx.decl().getText());//the result is:" inti;intx;inty;intz;intA[10]; "
+		//System.out.println(ctx.stmt().getText());// the result is: " while(i<10){readA[i];i=i+1;}i=0;while(notfalse){if(A[i]+1>=0){x=x+A[i];i=i+1;}else{i=i+1;break;}y=y+1;}writex/y;readz; "
+		Program program = new Program();
+		DeclContext dec = ctx.decl();// get all declarations
+		StmtContext stmt = ctx.stmt();//get all statements
+		if(dec != null) {
+			DeclarationsSeqs decs = visitDecl(dec);
+			program.setDeclarations(decs);
 		}
-		temp_body = body;
-		foundBody = true;
-		firstEntry = true;
-		while(foundBody){
-			if(temp_body.indexOf(")")>=0){
-				if(firstEntry){
-					firstEntry = false;
-					indexsRight.add(temp_body.indexOf(")"));
-				}else{
-					indexsRight.add(temp_body.indexOf(")")+indexsRight.get(indexsRight.size()-1)+1);
-				}				
-				temp_body = temp_body.substring(temp_body.indexOf(")") + 1);
-			}else{
-				foundBody = false;
-			} 
+		if(stmt != null) {
+			StatementsSeqs stmts = visitStmt(stmt);
+			program.setStatements(stmts);
 		}
-		int counter1 = 0;
-		int counter2 = 0;
-		int start = 0;
-		boolean notFound = true;
-		while(notFound){
-			counter1 = 0;
-			counter2 = 0;
-			for(int index : indexsLeft){
-				if(index < indexsRight.get(start)){
-					counter1++;
-				}
-			}
-			for(int index : indexsLeft){
-				if(index < indexsRight.get(counter1-1)){
-					counter2++;
-				}
-			}
-			if(counter1 == counter2){
-				notFound = false;
-			}
-			start++;
-		}
-		return body.substring(indexsLeft.get(0)+1, indexsRight.get(counter1-1));	
+		
+		return program; 
 	}
+	/**
+	 * {@inheritDoc}
+	 * 
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitIdentifier(MicroCParser.IdentifierContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitInteger(MicroCParser.IntegerContext ctx) { return visitChildren(ctx); }
 	
 	public String foundArrayIndex(String body){
 		String temp_body = body;
@@ -787,64 +698,7 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 	    	return false;
 	    }		
 	}
-		
-//	public Expressions getExpression(String exp){
-//		Expressions expression = new Expressions();
-//		if(exp.indexOf("+")>=0){
-//			String firstExpStr = exp.substring(0, exp.indexOf("+"));
-//			String secondExpStr = exp.substring(exp.indexOf("+")+1);
-//			Expressions firstExp;
-//			Expressions secondExp;
-//			
-//			firstExp = getSingleExpression(firstExpStr);
-//			secondExp = getSingleExpression(secondExpStr);
-//			
-//			Opa op = new Opa();
-//			String op_add = op.getAdd();
-//			expression = new ExpressionOperations(firstExp,op_add,secondExp);
-//		}else if(exp.indexOf("-")>=0){
-//			String firstExpStr = exp.substring(0, exp.indexOf("-"));
-//			String secondExpStr = exp.substring(exp.indexOf("-")+1);
-//			Expressions firstExp;
-//			Expressions secondExp;
-//						
-//			firstExp = getSingleExpression(firstExpStr);
-//			secondExp = getSingleExpression(secondExpStr);
-//			
-//			Opa op = new Opa();
-//			String op_sub = op.getMin();
-//			expression = new ExpressionOperations(firstExp,op_sub,secondExp);
-//
-//		}else if(exp.indexOf("*")>=0){
-//			String firstExpStr = exp.substring(0, exp.indexOf("*"));
-//			String secondExpStr = exp.substring(exp.indexOf("*")+1);
-//			Expressions firstExp;
-//			Expressions secondExp;
-//			
-//			firstExp = getSingleExpression(firstExpStr);
-//			secondExp = getSingleExpression(secondExpStr);
-//			
-//			Opa op = new Opa();
-//			String op_multi = op.getMulti();
-//			expression = new ExpressionOperations(firstExp,op_multi,secondExp);
-//
-//		}else if(exp.indexOf("/")>=0){			
-//			String firstExpStr = exp.substring(0, exp.indexOf("/"));
-//			String secondExpStr = exp.substring(exp.indexOf("/")+1);
-//			Expressions firstExp;
-//			Expressions secondExp;
-//			
-//			firstExp = getSingleExpression(firstExpStr);
-//			secondExp = getSingleExpression(secondExpStr);
-//			Opa op = new Opa();
-//			String op_div = op.getDiv();
-//			expression = new ExpressionOperations(firstExp,op_div,secondExp);		
-//		}else{
-//			expression = getSingleExpression(exp);
-//		}
-//		return expression;
-//	}
-	
+			
 	public boolean isNumeric(String str)
 	{
 	    for (char c : str.toCharArray())
@@ -873,103 +727,5 @@ public class MyVisitor<T> extends MicroCBaseVisitor<T> {
 		    }	
 		}
 		return singlrExpression;
-	}
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitAssignStmt(MicroCParser.AssignStmtContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitContinueStmt(MicroCParser.ContinueStmtContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitReadStmt(MicroCParser.ReadStmtContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitBreakStmt(MicroCParser.BreakStmtContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitWriteStmt(MicroCParser.WriteStmtContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitIfelseStmt(MicroCParser.IfelseStmtContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public While visitWhileStmt(MicroCParser.WhileStmtContext ctx) {
-
-		While myWhile = new While();
-		return myWhile;
-	}
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitBlockStmt(MicroCParser.BlockStmtContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public Program visitProgram(MicroCParser.ProgramContext ctx) { 
-		//System.out.println(ctx.decl().getText());//the result is:" inti;intx;inty;intz;intA[10]; "
-		//System.out.println(ctx.stmt().getText());// the result is: " while(i<10){readA[i];i=i+1;}i=0;while(notfalse){if(A[i]+1>=0){x=x+A[i];i=i+1;}else{i=i+1;break;}y=y+1;}writex/y;readz; "
-		Program program = new Program();
-		DeclContext dec = ctx.decl();// get all declarations
-		StmtContext stmt = ctx.stmt();//get all statements
-		if(dec != null) {
-			DeclarationsSeqs decs = visitDecl(dec);
-			program.setDeclarations(decs);
-		}
-		if(stmt != null) {
-			StatementsSeqs stmts = visitStmt(stmt);
-			program.setStatements(stmts);
-		}
-		
-		return program; 
-	}
-	/**
-	 * {@inheritDoc}
-	 * 
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitIdentifier(MicroCParser.IdentifierContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitInteger(MicroCParser.IntegerContext ctx) { return visitChildren(ctx); }
-	
+	}	
 }
