@@ -5,12 +5,12 @@ import programAnalysis.Epressions.Expressions;
 public class IfElse extends Statements {
 
 	private Expressions b;
-	private Statements s1;
-	private Statements s2;
+	private StatementsSeqs s1;
+	private StatementsSeqs s2;
 	
 	public IfElse() {}
 	
-	public IfElse(Expressions b, Statements s1, Statements s2) {
+	public IfElse(Expressions b, StatementsSeqs s1, StatementsSeqs s2) {
 		super();
 		this.b = b;
 		this.s1 = s1;
@@ -25,20 +25,26 @@ public class IfElse extends Statements {
 		this.b = b;
 	}
 
-	public Statements getS1() {
+	public StatementsSeqs getS1() {
 		return s1;
 	}
 
-	public void setS1(Statements s1) {
+	public void setS1(StatementsSeqs s1) {
 		this.s1 = s1;
 	}
 
-	public Statements getS2() {
+	public StatementsSeqs getS2() {
 		return s2;
 	}
 
-	public void setS2(Statements s2) {
+	public void setS2(StatementsSeqs s2) {
 		this.s2 = s2;
+	}
+	
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return b + " s1: " + s1 + "-- s2: " + s2;
 	}
 
 }

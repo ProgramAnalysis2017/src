@@ -20,17 +20,17 @@ public class ExpressionOperations extends Expressions {
 		this.op = op;
 	}
 	
-	public ExpressionOperations(Expressions a1, Expressions a2, String operator) {
+	public ExpressionOperations(Expressions a1, String operator, Expressions a2) {
 		super();
 		this.a1 = a1;
-		this.a2 = a2;
 		this.operator = operator;
+		this.a2 = a2;		
 	}
 	
 	@Override
 	public String toString() {
 		// TODO Auto-generated method stub
-		return a1 + " " + operator + " " + a2;
+		return a1 + operator + a2;
 	}
 	public Expressions getA1() {
 		return a1;

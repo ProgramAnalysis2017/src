@@ -2,9 +2,15 @@
 package microC.parsing;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
+import programAnalysis.Declarations.Declarations;
 import programAnalysis.Declarations.DeclarationsSeqs;
+import programAnalysis.Epressions.Expressions;
 import programAnalysis.programs.Program;
+import programAnalysis.statements.Break;
+import programAnalysis.statements.Continue;
+import programAnalysis.statements.Statements;
 import programAnalysis.statements.StatementsSeqs;
+import programAnalysis.statements.While;
 
 /**
  * This interface defines a complete generic visitor for a parse tree produced
@@ -19,7 +25,7 @@ public interface MicroCVisitor<T> extends ParseTreeVisitor<T> {
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitAexpr(MicroCParser.AexprContext ctx);
+	Expressions visitAexpr(MicroCParser.AexprContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MicroCParser#aexpr1}.
 	 * @param ctx the parse tree
@@ -43,7 +49,7 @@ public interface MicroCVisitor<T> extends ParseTreeVisitor<T> {
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitBexpr(MicroCParser.BexprContext ctx);
+	Expressions visitBexpr(MicroCParser.BexprContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MicroCParser#bexpr1}.
 	 * @param ctx the parse tree
@@ -67,7 +73,7 @@ public interface MicroCVisitor<T> extends ParseTreeVisitor<T> {
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitBasicDecl(MicroCParser.BasicDeclContext ctx);
+	Declarations visitBasicDecl(MicroCParser.BasicDeclContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MicroCParser#decl}.
 	 * @param ctx the parse tree
@@ -79,7 +85,7 @@ public interface MicroCVisitor<T> extends ParseTreeVisitor<T> {
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitBasicStmt(MicroCParser.BasicStmtContext ctx);
+	Statements visitBasicStmt(MicroCParser.BasicStmtContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MicroCParser#stmt}.
 	 * @param ctx the parse tree
@@ -91,43 +97,43 @@ public interface MicroCVisitor<T> extends ParseTreeVisitor<T> {
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitAssignStmt(MicroCParser.AssignStmtContext ctx);
+	Statements visitAssignStmt(MicroCParser.AssignStmtContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MicroCParser#continueStmt}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitContinueStmt(MicroCParser.ContinueStmtContext ctx);
+	Continue visitContinueStmt(MicroCParser.ContinueStmtContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MicroCParser#readStmt}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitReadStmt(MicroCParser.ReadStmtContext ctx);
+	Statements visitReadStmt(MicroCParser.ReadStmtContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MicroCParser#breakStmt}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitBreakStmt(MicroCParser.BreakStmtContext ctx);
+	Break visitBreakStmt(MicroCParser.BreakStmtContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MicroCParser#writeStmt}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitWriteStmt(MicroCParser.WriteStmtContext ctx);
+	Statements visitWriteStmt(MicroCParser.WriteStmtContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MicroCParser#ifelseStmt}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitIfelseStmt(MicroCParser.IfelseStmtContext ctx);
+	Statements visitIfelseStmt(MicroCParser.IfelseStmtContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MicroCParser#whileStmt}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitWhileStmt(MicroCParser.WhileStmtContext ctx);
+	While visitWhileStmt(MicroCParser.WhileStmtContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MicroCParser#blockStmt}.
 	 * @param ctx the parse tree

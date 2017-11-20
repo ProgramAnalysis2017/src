@@ -7,7 +7,10 @@ public class ReadX extends Statements{
 	private String x;
 	private Expressions a;
 	
-	
+	public ReadX(String x) {
+		super();
+		this.x = x;
+	}	
 	public ReadX(String read, String x) {
 		super();
 		this.read = read;
@@ -36,5 +39,10 @@ public class ReadX extends Statements{
 	}
 	public void setA(Expressions a) {
 		this.a = a;
+	}
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return read + " " + x;
 	}
 }

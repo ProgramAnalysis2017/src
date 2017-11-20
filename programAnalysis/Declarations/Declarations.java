@@ -1,5 +1,5 @@
 package programAnalysis.Declarations;
 
-public class Declarations {
+public class Declarations{
 
 }
