@@ -214,8 +214,8 @@ public class MicroCParser extends Parser {
 			if ( listener instanceof MicroCListener ) ((MicroCListener)listener).exitAexpr1(this);
 		}
 		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof MicroCVisitor ) return ((MicroCVisitor<? extends T>)visitor).visitAexpr1(this);
+		public <Expressions> Expressions accept(ParseTreeVisitor<? extends Expressions> visitor) {
+			if ( visitor instanceof MicroCVisitor ) return (Expressions) ((MicroCVisitor<? extends Expressions>)visitor).visitAexpr1(this);
 			else return visitor.visitChildren(this);
 		}
 	}
@@ -292,8 +292,8 @@ public class MicroCParser extends Parser {
 			if ( listener instanceof MicroCListener ) ((MicroCListener)listener).exitAexpr2(this);
 		}
 		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof MicroCVisitor ) return ((MicroCVisitor<? extends T>)visitor).visitAexpr2(this);
+		public <Expressions> Expressions accept(ParseTreeVisitor<? extends Expressions> visitor) {
+			if ( visitor instanceof MicroCVisitor ) return (Expressions) ((MicroCVisitor<? extends Expressions>)visitor).visitAexpr2(this);
 			else return visitor.visitChildren(this);
 		}
 	}
@@ -361,8 +361,8 @@ public class MicroCParser extends Parser {
 			if ( listener instanceof MicroCListener ) ((MicroCListener)listener).exitAexpr3(this);
 		}
 		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof MicroCVisitor ) return ((MicroCVisitor<? extends T>)visitor).visitAexpr3(this);
+		public <Expressions> Expressions accept(ParseTreeVisitor<? extends Expressions> visitor) {
+			if ( visitor instanceof MicroCVisitor ) return (Expressions) ((MicroCVisitor<? extends Expressions>)visitor).visitAexpr3(this);
 			else return visitor.visitChildren(this);
 		}
 	}
@@ -523,8 +523,8 @@ public class MicroCParser extends Parser {
 			if ( listener instanceof MicroCListener ) ((MicroCListener)listener).exitBexpr1(this);
 		}
 		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof MicroCVisitor ) return ((MicroCVisitor<? extends T>)visitor).visitBexpr1(this);
+		public <Expressions> Expressions accept(ParseTreeVisitor<? extends Expressions> visitor) {
+			if ( visitor instanceof MicroCVisitor ) return (Expressions) ((MicroCVisitor<? extends Expressions>)visitor).visitBexpr1(this);
 			else return visitor.visitChildren(this);
 		}
 	}
@@ -600,8 +600,8 @@ public class MicroCParser extends Parser {
 			if ( listener instanceof MicroCListener ) ((MicroCListener)listener).exitBexpr2(this);
 		}
 		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof MicroCVisitor ) return ((MicroCVisitor<? extends T>)visitor).visitBexpr2(this);
+		public <Expressions> Expressions accept(ParseTreeVisitor<? extends Expressions> visitor) {
+			if ( visitor instanceof MicroCVisitor ) return (Expressions) ((MicroCVisitor<? extends Expressions>)visitor).visitBexpr2(this);
 			else return visitor.visitChildren(this);
 		}
 	}
@@ -1497,8 +1497,8 @@ public class MicroCParser extends Parser {
 			if ( listener instanceof MicroCListener ) ((MicroCListener)listener).exitBlockStmt(this);
 		}
 		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof MicroCVisitor ) return ((MicroCVisitor<? extends T>)visitor).visitBlockStmt(this);
+		public <BlockStmt> BlockStmt accept(ParseTreeVisitor<? extends BlockStmt> visitor) {
+			if ( visitor instanceof MicroCVisitor ) return (BlockStmt) ((MicroCVisitor<? extends BlockStmt>)visitor).visitBlockStmt(this);
 			else return visitor.visitChildren(this);
 		}
 	}
@@ -1561,8 +1561,8 @@ public class MicroCParser extends Parser {
 			if ( listener instanceof MicroCListener ) ((MicroCListener)listener).exitProgram(this);
 		}
 		@Override
-		public <Program> Program accept(ParseTreeVisitor<? extends Program> visitor) {
-			if ( visitor instanceof MicroCVisitor ) return (Program) ((MicroCVisitor<? extends Program>)visitor).visitProgram(this);
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof MicroCVisitor ) return ((MicroCVisitor<? extends T>)visitor).visitProgram(this);
 			else return visitor.visitChildren(this);
 		}
 	}
@@ -1618,8 +1618,8 @@ public class MicroCParser extends Parser {
 			if ( listener instanceof MicroCListener ) ((MicroCListener)listener).exitIdentifier(this);
 		}
 		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof MicroCVisitor ) return ((MicroCVisitor<? extends T>)visitor).visitIdentifier(this);
+		public <String> String accept(ParseTreeVisitor<? extends String> visitor) {
+			if ( visitor instanceof MicroCVisitor ) return (String) ((MicroCVisitor<? extends String>)visitor).visitIdentifier(this);
 			else return visitor.visitChildren(this);
 		}
 	}
@@ -1660,8 +1660,8 @@ public class MicroCParser extends Parser {
 			if ( listener instanceof MicroCListener ) ((MicroCListener)listener).exitInteger(this);
 		}
 		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof MicroCVisitor ) return ((MicroCVisitor<? extends T>)visitor).visitInteger(this);
+		public <IntegerN> IntegerN accept(ParseTreeVisitor<? extends IntegerN> visitor) {
+			if ( visitor instanceof MicroCVisitor ) return (IntegerN) ((MicroCVisitor<? extends IntegerN>)visitor).visitInteger(this);
 			else return visitor.visitChildren(this);
 		}
 	}

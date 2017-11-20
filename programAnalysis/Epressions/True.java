@@ -12,4 +12,9 @@ public class True extends Expressions {
 		return isTrue;
 	}
 	
+	public String toString() {
+		// TODO Auto-generated method stub
+		return isTrue;
+	}
+	
 }

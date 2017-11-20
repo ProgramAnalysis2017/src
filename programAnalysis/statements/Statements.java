@@ -1,5 +1,7 @@
 package programAnalysis.statements;
 
-public class Statements {
+import programAnalysis.programs.Program;
+
+public class Statements extends Program {
 	
 }

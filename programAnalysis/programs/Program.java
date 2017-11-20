@@ -1,17 +1,18 @@
 package programAnalysis.programs;
 
 import programAnalysis.Declarations.Declarations;
-import programAnalysis.statements.Statements;
+import programAnalysis.Declarations.DeclarationsSeqs;
+import programAnalysis.statements.StatementsSeqs;
 
 public class Program {
 
-	private Declarations declarations;
-	private Statements statements;
+	private DeclarationsSeqs declarations;
+	private StatementsSeqs statements;
 	
 	public Program() {
 		super();
 	}
-	public Program(Declarations declarations, Statements statements) {
+	public Program(DeclarationsSeqs declarations, StatementsSeqs statements) {
 		super();
 		this.declarations = declarations;
 		this.statements = statements;
@@ -19,13 +20,13 @@ public class Program {
 	public Declarations getDeclarations() {
 		return declarations;
 	}
-	public void setDeclarations(Declarations declarations) {
+	public void setDeclarations(DeclarationsSeqs declarations) {
 		this.declarations = declarations;
 	}
-	public Statements getStatements() {
+	public StatementsSeqs getStatements() {
 		return statements;
 	}
-	public void setStatements(Statements statements) {
+	public void setStatements(StatementsSeqs statements) {
 		this.statements = statements;
 	}
 	

@@ -11,5 +11,9 @@ public class False extends Expressions {
 	public String getIsFalse() {
 		return isFalse;
 	}
+	public String toString() {
+		// TODO Auto-generated method stub
+		return isFalse;
+	}
 	
 }
