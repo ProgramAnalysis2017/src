@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Map;
 
 import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.tree.*;
 import microC.parsing.*;
 import microC.parsing.MicroCParser.ProgramContext;
 import programAnalysis.SignDetection.SignDetection;
@@ -12,9 +11,6 @@ import programAnalysis.graphs.Gen;
 import programAnalysis.graphs.Graph;
 import programAnalysis.graphs.Kill;
 import programAnalysis.programs.Program;
-import programAnalysis.statements.Statements;
-import programAnalysis.statements.StatementsSeqs;
-import programAnalysis.statements.While;
 
 
 public class MicroC {
@@ -24,16 +20,12 @@ public class MicroC {
 			System.out.println("Error: No program specified.");
 			return;
 		}
-        MicroCLexer lex = new MicroCLexer(new ANTLRFileStream(args[0]));
-        CommonTokenStream tokens = new CommonTokenStream(lex);
-        MicroCParser parser = new MicroCParser(tokens);
-		ProgramContext ctx = parser.program(); //This command parses the program.
-		MicroCVisitor<T> myVisitor = new MyVisitor<T>();
-		Program program = myVisitor.visitProgram(ctx);
-		//Detection of Sign
-		System.out.println("------------Test Detection of Sign--------------------");
-		SignDetection sd = new SignDetection(program);
-		sd.initData();
+	    MicroCLexer lex = new MicroCLexer(new ANTLRFileStream(args[0]));
+	    CommonTokenStream tokens = new CommonTokenStream(lex);
+	    MicroCParser parser = new MicroCParser(tokens);
+		ProgramContext ctx = parser.program(); //This command parses the program.     
+		MicroCVisitor<Program> programVisitor = new ProgramVisitor();
+		Program program = programVisitor.visitProgram(ctx);
 		
 		//Reaching Definition
 		Graph g = new Graph();
@@ -71,6 +63,13 @@ public class MicroC {
 			rdexit ++;
 			System.out.println("RD.("+rdexit+")  | "+list);
 		}
-       
+		
+		//Detection of Sign
+		System.out.println();
+		System.out.println("------------Test Detection of Sign--------------------");
+		SignDetection sd = new SignDetection(program);
+		sd.initData();
+		System.out.println();
+		
 	}
 }

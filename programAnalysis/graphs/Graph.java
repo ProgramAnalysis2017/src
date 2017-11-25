@@ -3,7 +3,9 @@ package programAnalysis.graphs;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -12,6 +14,7 @@ import programAnalysis.statements.StatementsSeqs;
 import programAnalysis.statements.While;
 import programAnalysis.statements.Write;
 import programAnalysis.statements.Assignment;
+import programAnalysis.statements.AssignmentArray;
 import programAnalysis.statements.Break;
 import programAnalysis.statements.Continue;
 import programAnalysis.statements.If;
@@ -19,8 +22,6 @@ import programAnalysis.statements.IfElse;
 import programAnalysis.statements.ReadArray;
 import programAnalysis.statements.ReadX;
 import programAnalysis.Epressions.VariableX;
-import programAnalysis.operatiors.Opa;
-import programAnalysis.operatiors.Opr;
 import programAnalysis.programs.Program;
 import programAnalysis.Declarations.Declarations;
 import programAnalysis.Declarations.DeclarationsSeqs;
@@ -51,6 +52,8 @@ public class Graph {
 	private int exit = 0;
 	private int conditionLabel = 0;
 	private int labelSum;
+	private int globalLabel = 0;
+	private int breakLabel = 0;
 	
 	private Program program;
 	
@@ -62,10 +65,11 @@ public class Graph {
 	
 	//data structure for Detection of Sign
 	private ArrayList<ArrayList<String>> DofS = new ArrayList<ArrayList<String>>();
-	
 	private ArrayList<ArrayList<String>> DofSFIFO = new ArrayList<ArrayList<String>>();
 	
 	private HashMap<String, HashSet<String>> ds = new HashMap<String, HashSet<String>>();
+	
+	
 	
 	/**
 	 * According to the program, compute declaration and statement.
@@ -130,6 +134,10 @@ public class Graph {
 			data.add((ReadX)sSeqs.getS1());
 		} else if(sSeqs.getS1() instanceof ReadArray) {
 			data.add((ReadArray)sSeqs.getS1());
+		} else if(sSeqs.getS1() instanceof AssignmentArray) {
+			data.add((AssignmentArray)sSeqs.getS1());
+			AssignmentArray tempAss = (AssignmentArray)sSeqs.getS1();
+			insideVars(tempAss.getArrayName());
 		}
 		
 		if(null != sSeqs.getS2()) {
@@ -156,6 +164,7 @@ public class Graph {
 	}
 
 	public void initFlows() {
+		// TODO initialize flows
 		for(int i=0; i<data.size(); i++) {
 			exit ++;
 			if(data.get(i) instanceof While) {
@@ -167,7 +176,16 @@ public class Graph {
 					flows.add( new Flow(exit-1,exit) );
 				}
 				exit = handleStatements(exit+1, 0, w.getS0());
-				flows.add( new Flow(exit,conditionLabel) );
+				if(breakLabel==0) {
+					flows.add( new Flow(exit,conditionLabel) );
+					if(globalLabel>exit) {
+						exit = globalLabel;
+					}
+				} else {
+					flows.add( new Flow(exit,breakLabel+1) );
+					exit = breakLabel;
+				}
+				
 			} else if(data.get(i) instanceof If) {
 				//same as while
 				If ifStamtment = (If) data.get(i);
@@ -227,17 +245,33 @@ public class Graph {
 	 * @return
 	 */
 	private int handleStatements(int label, int conditionLabel, Statements s0) {
+		//System.out.println("current statement type : " + s0 + "  ; label : "+label);
 		if(s0 instanceof StatementsSeqs) {
+			//if the s1 of the statementsSeqs is not null
 			if(null != ((StatementsSeqs)s0).getS1()) {
 				label = handleStatements(label,conditionLabel,((StatementsSeqs)s0).getS1());
 			}
-			if(null != ((StatementsSeqs)s0).getS2()) {
+			//if the s1 of the statementsSeqs is Continue then label s2 of the statementsSeqs without flow s2 into worklist
+			if(null != ((StatementsSeqs)s0).getS2() && ((StatementsSeqs)s0).getS1() instanceof Continue) {
+				globalLabel = labelNextStatements(label+1,0,((StatementsSeqs)s0).getS2());
+				//System.out.println("labelnextstatement : " +label );
+			}
+			//if the s1 of the statementsSeqs is Break then label s2 of the statementsSeqs without flow s2 into worklist
+			if(null != ((StatementsSeqs)s0).getS2() && ((StatementsSeqs)s0).getS1() instanceof Break) {
+				breakLabel = labelNextStatements(label+1,0,((StatementsSeqs)s0).getS2());
+				//System.out.println("labelnextstatement : " +label );
+			}
+			//if the s2 of the statementsSeqs is not null and s1 is not continue or break
+			if(null != ((StatementsSeqs)s0).getS2() && 
+					!(((StatementsSeqs)s0).getS1() instanceof Continue) &&
+					!( ((StatementsSeqs)s0).getS1() instanceof Break )) {
 				label = handleStatements(label+1,0,((StatementsSeqs)s0).getS2());
 			}
+			
 		} else if(s0 instanceof Assignment || 
-				s0 instanceof Break || 
-				s0 instanceof Continue ||
-				s0 instanceof Write) {
+				  s0 instanceof Break || 
+				  s0 instanceof AssignmentArray || 
+				  s0 instanceof Write) {
 			labels.put(label, s0);
 			Flow f;
 			if(conditionLabel != 0) {
@@ -254,7 +288,43 @@ public class Graph {
 			if(s0 instanceof Assignment ) {
 				insideVars( ((Assignment)s0).getX() );
 				handleExpression(((Assignment)s0).getA());
+			} else if(s0 instanceof AssignmentArray) {
+				insideVars( ((AssignmentArray)s0).getArrayName() );
+				handleExpression(((AssignmentArray)s0).getA());
 			}
+		} else if(s0 instanceof Continue) {
+			labels.put(label, s0);
+			Flow f;
+			if(conditionLabel != 0) {
+				f = new Flow(label,conditionLabel);
+				//System.out.println("continue flow : " + f);
+				conditionLabel = 0;
+			} else {
+				f = new Flow(label-1,label);
+			}
+			flows.add(f);
+		}
+		return label;
+	}
+
+	/**
+	 * label the statements after the continue and break
+	 * @param label
+	 * @param conditionLabel
+	 * @param s2
+	 * @return
+	 */
+	private int labelNextStatements(int label, int conditionLabel, Statements s2) {
+		// TODO Auto-generated method stub
+		if(s2 instanceof StatementsSeqs) {
+			if(null != ((StatementsSeqs)s2).getS1()) {
+				label = labelNextStatements(label,conditionLabel,((StatementsSeqs)s2).getS1());
+			}
+			if(null != ((StatementsSeqs)s2).getS2()) {
+				label = labelNextStatements(label+1,conditionLabel,((StatementsSeqs)s2).getS2());
+			}
+		} else {
+			labels.put(label, s2);
 		}
 		return label;
 	}
@@ -265,7 +335,6 @@ public class Graph {
 	 * @param a
 	 */
 	private void handleExpression(Expressions a) {
-		// TODO Auto-generated method stub
 		if(a instanceof Array) {
 			
 			insideVars(((Array)a).getArrayName());
@@ -294,17 +363,18 @@ public class Graph {
 			//System.out.println("labels type is " + entry.getValue());
 			if(entry.getValue() instanceof Assignment) {
 				Assignment assignment = (Assignment) entry.getValue();
+				auxiliaryIntiKG(entry, assignment.getX());
+			} else if(entry.getValue() instanceof AssignmentArray) {
+				AssignmentArray assignmentArray = (AssignmentArray) entry.getValue();
 				Pattern pattern = Pattern.compile("[A-Z;]*");
-				Matcher matcher = pattern.matcher(assignment.getX());
+				Matcher matcher = pattern.matcher(assignmentArray.getArrayName());
 				if(matcher.matches()) {
 					kill.put(entry.getKey(), null);//assignment of Array does not kill anything
 					//for Gen
 					ArrayList<Gen> gs = new ArrayList<Gen>();
-					Gen g = new Gen(assignment.getX(), entry.getKey() + "");
+					Gen g = new Gen(assignmentArray.getArrayName(), entry.getKey() + "");
 					gs.add(g);
 					gen.put(entry.getKey(), gs);
-				} else {
-					auxiliaryIntiKG(entry, assignment.getX());
 				}
 			} else if(entry.getValue() instanceof ExpressionOperations || 
 					  entry.getValue() instanceof True || 
@@ -379,6 +449,7 @@ public class Graph {
 		System.out.println(flows + "  | " + RDo);
 		algorithm(RDo,1);
 		///*
+		System.out.println();
 		System.out.println("-------------------FIFO------------------------------");
 		System.out.println(flowsFIFO + "  | " + RDoFIFO);
 		algorithmFIFO(RDoFIFO,1);
@@ -405,11 +476,16 @@ public class Graph {
 			ds.put(vars.get(j).getX(), new HashSet<String>());
 		}
 		
+//		for( Map.Entry<String, HashSet<String>> entry : ds.entrySet() ) {
+//			System.out.println("sd key: " + entry.getKey() + " ; val: " + entry.getValue() );
+//		}
+		
 		//make a copy for the FIFO
 		for (int i = 0; i < flows.size(); i++) {
 			Flow f = new Flow(flows.get(i).getLabel1(), flows.get(i).getLabel2());
 			flowsFIFO.add(f);
 		}
+		
 		for (int i = 0; i < flowsCopyFIFO.size(); i++) {
 			Flow f = new Flow(flowsCopy.get(i).getLabel1(), flowsCopy.get(i).getLabel2());
 			flowsCopyFIFO.add(f);
@@ -417,12 +493,12 @@ public class Graph {
 		
 		System.out.println("-------------------LIFO------------------------------");
 		System.out.println(flows + "  | " + DofS);
-		//algorithm(DofS,2);
-		///*
+		algorithm(DofS,2);
+		System.out.println();
 		System.out.println("-------------------FIFO------------------------------");
 		System.out.println(flowsFIFO + "  | " + DofSFIFO);
-		//algorithmFIFO(DofSFIFO,2);
-		//*/
+		algorithmFIFO(DofSFIFO,2);
+
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -440,47 +516,41 @@ public class Graph {
 			
 			boolean RDexitIncludeRDentry = true;
 			
+			//reaching definition kill and gen
 			if(x==1) {
-				//reaching definition kill and gen
 				rdL = killAndGen(l, rdL);
-				//RDo(l') = RDo(l') U RD.(l)
-				// compute whether (RDo(l) \ Kill(l)) U Gen(l) included in RD.(l)
-				//if the RD of flow's right hand side label has been computed
-				if(rd_L.size()>0) {
-					//if RDrdl and RDrd_l contains different elements
-					//RDo(l') = RDo(l') U (RDo(l) \ Kill(l)) U Gen(l)
-					for(String s : rdL) {
-						if(!rd_L.contains(s)) {
-							RDexitIncludeRDentry = false;
-							break;
-						}
-					}
-					if(!RDexitIncludeRDentry) {
-						for(String s : rd_L) {
-							if(!rdL.contains(s)) {
-								rdL.add(s);
-							}
-						}
-						
-						RDo.add(_l-1,rdL);
-						RDo.remove(_l);
-					}
-					
-				}else {
-					RDo.add(_l-1,rdL);
-					RDo.remove(_l);
-				}
+			} else if(x==2) {
+				rdL = detectionOfSign(l, rdL);
 			}
 			
-			//for Detection of Sign
-			if(x==2) {
-				rdL = detectionOfSign(l, rdL);
+			//RDo(l') = RDo(l') U RD.(l)
+			// compute whether (RDo(l) \ Kill(l)) U Gen(l) included in RD.(l)
+			//if the RD of flow's right hand side label has been computed
+			if(rd_L.size()>0) {
+				//if RDrdl and RDrd_l contains different elements
+				//RDo(l') = RDo(l') U (RDo(l) \ Kill(l)) U Gen(l)
 				for(String s : rdL) {
 					if(!rd_L.contains(s)) {
 						RDexitIncludeRDentry = false;
 						break;
 					}
 				}
+				
+				if(!RDexitIncludeRDentry) {
+					if(x==1) {
+						for(String s : rd_L) {
+							if(!rdL.contains(s)) {
+								rdL.add(s);
+							}
+						}
+					}
+					RDo.add(_l-1,rdL);
+					RDo.remove(_l);
+				}
+				
+			}else {
+				RDo.add(_l-1,rdL);
+				RDo.remove(_l);
 			}
 			
 			//LIFO
@@ -508,9 +578,11 @@ public class Graph {
 			System.out.println(flows + "  | " + RDo);
 			
 			//compute all the RD. according to all the RDo
-			if(flows.size()==0) {
+			if(flows.size()==0 && x==1) {
 				System.out.println("RD.("+RDo.size()+")  | " + killAndGen(RDo.size(), RDo.get(RDo.size()-1)));
 				generateRDexit();
+			} else if(flows.size()==0 && x==2) {
+				System.out.println("label ("+RDo.size()+")  | " + detectionOfSign(RDo.size(), RDo.get(RDo.size()-1)));
 			}
 			
 		}
@@ -530,7 +602,11 @@ public class Graph {
 			ArrayList<String> rd_L = (ArrayList<String>) RDo.get(_l-1).clone();
 			
 			//reaching definition kill and gen
-			rdL = killAndGen(l, rdL);
+			if(x==1) {
+				rdL = killAndGen(l, rdL);
+			} else if(x==2) {
+				rdL = detectionOfSign(l, rdL);
+			}
 			
 			//RDo(l') = RDo(l') U RD.(l)
 			// compute whether (RDo(l) \ Kill(l)) U Gen(l) included in RD.(l)
@@ -546,12 +622,13 @@ public class Graph {
 					}
 				}
 				if(!RDexitIncludeRDentry) {
-					for(String s : rd_L) {
-						if(!rdL.contains(s)) {
-							rdL.add(s);
+					if(x==1) {
+						for(String s : rd_L) {
+							if(!rdL.contains(s)) {
+								rdL.add(s);
+							}
 						}
 					}
-					
 					RDo.add(_l-1,rdL);
 					RDo.remove(_l);
 				}
@@ -586,9 +663,11 @@ public class Graph {
 			System.out.println(flowsFIFO + "  | " + RDo);
 			
 			//compute all the RD. according to all the RDo
-			if(flowsFIFO.size()==0) {
+			if(flowsFIFO.size()==0 && x==1) {
 				System.out.println("RD.("+RDo.size()+")  | " + killAndGen(RDo.size(), RDo.get(RDo.size()-1)));
 				generateRDexitFIFO();
+			} else if(flowsFIFO.size()==0 && x==2) {
+				System.out.println("label ("+RDo.size()+")  | " + detectionOfSign(RDo.size(), RDo.get(RDo.size()-1)));
 			}
 			
 		}
@@ -615,6 +694,41 @@ public class Graph {
 	 * @return
 	 */
 	private ArrayList<String> killAndGen(int l, ArrayList<String> rdL) {
+		boolean arrayIndexIsNegative = false;
+		if(labels.get(l) instanceof AssignmentArray) {
+			AssignmentArray assignmentArray = (AssignmentArray)labels.get(l);
+			if(null != assignmentArray.getIndex()) {
+				if(assignmentArray.getIndex() instanceof IntegerN) {
+					IntegerN n = (IntegerN)assignmentArray.getIndex();
+					if(n.getN()<0) {
+						arrayIndexIsNegative = true;
+					}
+				// if the index is expression, then this is complicated. Here only compute simple integer calculation
+				} else if(assignmentArray.getIndex() instanceof ExpressionOperations) {
+					ExpressionOperations expression = (ExpressionOperations)assignmentArray.getIndex();
+					if(expression.getA1() instanceof IntegerN && expression.getA2() instanceof IntegerN) {
+						if(expression.getOperator().equals("+")) {
+							if( ((IntegerN)expression.getA1()).getN() + ((IntegerN)expression.getA2()).getN() < 0 ) {
+								arrayIndexIsNegative = true;
+							}
+						} else if(expression.getOperator().equals("-")) {
+							if( ((IntegerN)expression.getA1()).getN() - ((IntegerN)expression.getA2()).getN() < 0 ) {
+								arrayIndexIsNegative = true;
+							}
+						} else if(expression.getOperator().equals("*")) {
+							if( ((IntegerN)expression.getA1()).getN() * ((IntegerN)expression.getA2()).getN() < 0 ) {
+								arrayIndexIsNegative = true;
+							}
+						} else if(expression.getOperator().equals("/")) {
+							if( ((IntegerN)expression.getA2()).getN() == 0 || ((IntegerN)expression.getA1()).getN() / ((IntegerN)expression.getA2()).getN() < 0 ) {
+								arrayIndexIsNegative = true;
+							}
+						}
+					}
+				}
+			}
+		}
+		
 		//kill
 		ArrayList<Kill> killL = kill.get(l);
 		if(killL != null) { //if nothing to kill then do nothing
@@ -633,7 +747,13 @@ public class Graph {
 		if(genL != null) {
 			for(int i=0; i<genL.size(); i++) {
 				boolean temp = true;
-				String s = genL.get(i).getVar() + genL.get(i).getLabel();
+				String s = "";
+				if(arrayIndexIsNegative) {
+					s = genL.get(i).getVar() + genL.get(i).getLabel() + "null";
+				} else {
+					s = genL.get(i).getVar() + genL.get(i).getLabel();
+				}
+				
 				for(int j=0; j<rdL.size(); j++) {
 					if(s.equals(rdL.get(j))) {
 						temp = false;
@@ -656,13 +776,93 @@ public class Graph {
 	 */
 	private ArrayList<String> detectionOfSign(int l, ArrayList<String> rdL) {
 		// TODO calculate the sign of each variable
+		HashSet<String> varSigns = new HashSet<String>();
 		if(labels.get(l) instanceof Assignment) {
 			Assignment assignment = (Assignment)labels.get(l);
+			//System.out.println("Assignment : " + assignment);
+			varSigns = ds.get(assignment.getX());
 			if(null != assignment.getA()) {
 				HashSet<String> signs = handleExpressionDS(assignment.getA());
+				if(signs.size() != 0) {
+					Iterator<String> i = signs.iterator();
+					while(i.hasNext()) {
+						varSigns.add(i.next());
+					}
+				}
+			}
+		} else if(labels.get(l) instanceof AssignmentArray) {
+			AssignmentArray assignmentArray = (AssignmentArray)labels.get(l);
+			varSigns = ds.get(assignmentArray.getArrayName());
+			if(null != assignmentArray.getIndex()) {
+				if(assignmentArray.getIndex() instanceof IntegerN) {
+					IntegerN n = (IntegerN)assignmentArray.getIndex();
+					if(n.getN()<0) {
+						varSigns.clear();
+						varSigns.add("null");
+					}
+				// if the index is expression, then this is complicated. Here only compute simple integer calculation
+				} else if(assignmentArray.getIndex() instanceof ExpressionOperations) {
+					ExpressionOperations expression = (ExpressionOperations)assignmentArray.getIndex();
+					if(expression.getA1() instanceof IntegerN && expression.getA2() instanceof IntegerN) {
+						if(expression.getOperator().equals("+")) {
+							if( ((IntegerN)expression.getA1()).getN() + ((IntegerN)expression.getA2()).getN() < 0 ) {
+								varSigns.clear();
+								varSigns.add("null");
+							}
+						} else if(expression.getOperator().equals("-")) {
+							if( ((IntegerN)expression.getA1()).getN() - ((IntegerN)expression.getA2()).getN() < 0 ) {
+								varSigns.clear();
+								varSigns.add("null");
+							}
+						} else if(expression.getOperator().equals("*")) {
+							if( ((IntegerN)expression.getA1()).getN() * ((IntegerN)expression.getA2()).getN() < 0 ) {
+								varSigns.clear();
+								varSigns.add("null");
+							}
+						} else if(expression.getOperator().equals("/")) {
+							if( ((IntegerN)expression.getA2()).getN() == 0 || ((IntegerN)expression.getA1()).getN() / ((IntegerN)expression.getA2()).getN() < 0 ) {
+								varSigns.clear();
+								varSigns.add("null");
+							}
+						}
+					}
+				}
+			}
+			
+			if(null != assignmentArray.getA() && !varSigns.contains("null")) {
+				HashSet<String> signs = handleExpressionDS(assignmentArray.getA());
+				if(signs.size() != 0) {
+					Iterator<String> i = signs.iterator();
+					while(i.hasNext()) {
+						varSigns.add(i.next());
+					}
+				}
 			}
 		}
-		return rdL;
+		
+		
+		ArrayList<String> list = new ArrayList<String>();
+		for (Entry<String, HashSet<String>> entry : ds.entrySet()) {
+			String key = entry.getKey();
+			HashSet<String> val = entry.getValue();
+			String s = "";
+			if(val.size() == 3 || val.size() == 0) {
+				s = key + ": {-,0,+}";
+			}else {
+				Iterator<String> i = val.iterator();
+				s = key + ": {"; 
+				while(i.hasNext()) {
+					s += i.next() + ",";
+				}
+				if(s.contains(",")) {
+					s = s.substring(0, s.length()-1);
+				}
+				s = s + "}";
+			}
+			//System.out.println("the result : " + s);
+			list.add(s);
+		}
+		return list;
 	}
 	
 	/**
@@ -672,27 +872,210 @@ public class Graph {
 	 */
 	private HashSet<String> handleExpressionDS(Expressions a) {
 		// TODO handle the expression for Detection of Sign
+		HashSet<String> signs = new HashSet<String>();
+		String sign = null;
 		//this is used to store the signs of the left hand side of the expression.
-		HashSet<String> leftHandSideExpression = new HashSet<String>();
+		HashSet<String> leftHandSideSign = new HashSet<String>();
 		//this is used to store the signs of the right hand side of the expression.
-		HashSet<String> rightHandSideExpression = new HashSet<String>();
+		HashSet<String> rightHandSideSign = new HashSet<String>();
 		if(a instanceof ExpressionOperations) {
 			ExpressionOperations expression = (ExpressionOperations) a;
+			sign = expression.getOperator();
 			if(expression.getA1() instanceof VariableX) {
 				VariableX v = (VariableX) expression.getA1();
-				leftHandSideExpression = ds.get(v.getX());
+				leftHandSideSign = ds.get(v.getX());
+			} else if(expression.getA1() instanceof IntegerN) {
+				int temp = ((IntegerN)expression.getA1()).getN();
+				leftHandSideSign.add(signOfInteger(temp));
+				//System.out.println("left intger : " + temp);
+				//System.out.println("left intger leftHandSideSign : " + leftHandSideSign);
 			} else if(expression.getA1() instanceof ExpressionOperations) {
-				leftHandSideExpression = handleExpressionDS(expression.getA1());
+				leftHandSideSign = handleExpressionDS(expression.getA1());
 			}
 			
 			if(expression.getA2() instanceof VariableX) {
 				VariableX v = (VariableX) expression.getA2();
-				rightHandSideExpression = ds.get(v.getX());
+				rightHandSideSign = ds.get(v.getX());
+			} else if(expression.getA2() instanceof IntegerN) {
+				int temp = ((IntegerN)expression.getA2()).getN();
+				rightHandSideSign.add(signOfInteger(temp));
+				//System.out.println("left intger : " + temp);
+				//System.out.println("left intger rightHandSideSign : " + rightHandSideSign);
 			} else if(expression.getA2() instanceof ExpressionOperations) {
-				leftHandSideExpression = handleExpressionDS(expression.getA2());
+				rightHandSideSign = handleExpressionDS(expression.getA2());
 			}
+			signs = calculationSigns(leftHandSideSign,sign,rightHandSideSign);
+		} else if(a instanceof IntegerN) {
+			int temp = ((IntegerN)a).getN();
+			String tempSign = signOfInteger(temp);
+			signs.add(tempSign);
+		} else if(a instanceof False ||
+				  a instanceof NotB ||
+				  a instanceof True) {
+			
+		} else if(a instanceof Array) {
+			//Array
+		}
+		//System.out.println("signs : " + signs);
+		return signs;
+	}
+
+	/**
+	 * according to the given integer, compute it's signs
+	 * @param signs
+	 * @param temp
+	 */
+	private String signOfInteger(int temp) {
+		if( temp > 0 ) {
+			return "+";
+		} else if( temp == 0 ) {
+			return "0";
+		} else if( temp < 0 ) {
+			return "-";
 		}
 		return null;
+	}
+
+	private HashSet<String> calculationSigns(HashSet<String> leftHandSideSign, String sign, HashSet<String> rightHandSideSign) {
+		HashSet<String> signs = new HashSet<String>();
+		//if the leftHandSideExpression is empty then return rightHandSideExpression. vice versa
+		if(leftHandSideSign.size() == 0) {
+			return rightHandSideSign;
+		} else if(rightHandSideSign.size() == 0) {
+			return leftHandSideSign;
+		} else {
+			for (String left : leftHandSideSign) {
+				for (String right : rightHandSideSign) {
+					int r = transStringToInteger(right);
+					int l = transStringToInteger(left);
+					if("+".equals(sign)) {
+						HashSet<String> result = add(l,r);
+						Iterator<String> i = result.iterator();
+						while(i.hasNext()) {
+							signs.add(i.next());
+						}
+					} else if("-".equals(sign)) {
+						HashSet<String> result = min(l,r);
+						Iterator<String> i = result.iterator();
+						while(i.hasNext()) {
+							signs.add(i.next());
+						}
+					} else if("*".equals(sign)) {
+						HashSet<String> result = multip(l,r);
+						Iterator<String> i = result.iterator();
+						while(i.hasNext()) {
+							signs.add(i.next());
+						}
+					} else if("/".equals(sign)) {
+						HashSet<String> result = div(l,r);
+						Iterator<String> i = result.iterator();
+						while(i.hasNext()) {
+							signs.add(i.next());
+						}
+					}
+					//signs.add(s);
+				}
+			}
+		}
+		
+		return signs;
+	}
+
+	private int transStringToInteger(String s) {
+		if("+".equals(s)) {
+			return 2;
+		} else if("0".equals(s)) {
+			return 1;
+		}else if("-".equals(s)) {
+			return 0;
+		}
+		return -1;
+	}
+
+	//add method
+	private HashSet<String> add(int left, int right) {
+		// TODO matrix of add;
+		/**
+		 *  + |  -       0     +
+		 * -----------------------------
+		 *  - |  -       -    {-,0,+}
+		 *  0 |  -       0     +
+		 *  + | {-,0,+}  +     +
+		 */
+		String[][] addMatrix = {{"-","-","-,0,+"},
+				                {"-","0","+"},
+				                {"-,0,+","+","+"}};
+		
+		String result = addMatrix[left][right];
+		
+		return stringToHashSet(result);
+	}
+	
+	private HashSet<String> div(int left, int right) {
+		// TODO matrix of division;
+		/**
+		 *  / |  -       0     +
+		 * -----------------------------
+		 *  - |  +       null  -
+		 *  0 |  0       null  0
+		 *  + |  -       null  +
+		 */
+		String[][] addMatrix = {{"+","null","-"},
+				                {"+","null","0"},
+				                {"-","null","+"}};
+
+		String result = addMatrix[left][right];
+		
+		return stringToHashSet(result);
+	}
+
+	private HashSet<String> multip(int left, int right) {
+		// TODO matrix of multiplication;
+		/**
+		 *  * |  -       0     +
+		 * -----------------------------
+		 *  - |  +       0     -
+		 *  0 |  0       0     0
+		 *  + |  -       0     +
+		 */
+		String[][] addMatrix = {{"+","0","-"},
+				                {"0","0","0"},
+				                {"-","0","+"}};
+
+		String result = addMatrix[left][right];
+
+		return stringToHashSet(result);
+	}
+
+	private HashSet<String> min(int left, int right) {
+		// TODO matrix of minus;
+		/**
+		 *  - |  -       0     +
+		 * -----------------------------
+		 *  - | {-,0,+}  -     -
+		 *  0 |  +       0     -
+		 *  + |  +       +     {-,0,+}
+		 */
+		String[][] addMatrix = {{"-,0,+","-","-"},
+				                {"+","0","-"},
+				                {"+","+","-,0,+"}};
+
+		String result = addMatrix[left][right];
+//System.out.println("right: " + right + " ; left: " + left + " result: " + result);
+		return stringToHashSet(result);
+	}
+
+	private HashSet<String> stringToHashSet(String s) {
+		HashSet<String> result = new HashSet<String>();
+		if(s.length()==1) {
+			result.add(s);
+		} else if(s.length() > 1) {
+			String[] ss = s.split(",");
+			for(String string : ss) {
+				result.add(string);
+			}
+		}
+		return result ;
 	}
 
 	/**
@@ -873,6 +1256,22 @@ public class Graph {
 
 	public void setDs(HashMap<String, HashSet<String>> ds) {
 		this.ds = ds;
+	}
+
+	public int getGlobalLabel() {
+		return globalLabel;
+	}
+
+	public void setGlobalLabel(int globalLabel) {
+		this.globalLabel = globalLabel;
+	}
+
+	public int getBreakLabel() {
+		return breakLabel;
+	}
+
+	public void setBreakLabel(int breakLabel) {
+		this.breakLabel = breakLabel;
 	}
 
 }

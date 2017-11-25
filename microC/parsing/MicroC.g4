@@ -112,7 +112,7 @@ breakStmt : BREAK SEMI ;
 
 writeStmt : WRITE aexpr SEMI ;
 
-ifelseStmt : IF LPAREN bexpr RPAREN  LBRACE stmt RBRACE (ELSE LBRACE stmt RBRACE)? ;
+ifelseStmt : IF LPAREN bexpr RPAREN  LBRACE  stmt RBRACE (ELSE  stmt RBRACE)? ;
 
 
 whileStmt : WHILE LPAREN bexpr RPAREN  LBRACE stmt RBRACE ;

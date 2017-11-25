@@ -33,31 +33,20 @@ public class SignDetection {
 	public void initData() {
 		g = new Graph();
 		g.initData(program);
-		/*flows = g.getFlows();
-		flowsCopy = g.getFlowsCopy();
-		labels = g.getLabels();
-		data = g.getData();
-		vars = g.getVars();
-		entry = g.getEntry();
-		exit = g.getExit();
-		labelSum = g.getLabelSum();
-		
-		//make a copy for the FIFO
-		for (int i = 0; i < flows.size(); i++) {
-			Flow f = new Flow(flows.get(i).getLabel1(), flows.get(i).getLabel2());
-			flowsFIFO.add(f);
-		}
-		for (int i = 0; i < flowsCopyFIFO.size(); i++) {
-			Flow f = new Flow(flowsCopy.get(i).getLabel1(), flowsCopy.get(i).getLabel2());
-			flowsCopyFIFO.add(f);
-		}*/
 		System.out.println("------------Test Data List--------------------");
 		System.out.println(g.getData());
 		System.out.println("----------------------------------------------");
 		System.out.println(g.getLabels());
 		System.out.println(g.getFlows());
-		
+		System.out.println();
 		g.algorithmMatrixDS();
+		System.out.println();
+		System.out.println("-----------Detection of Sign RESULT-----------------");
+		int dsResult = 0;
+		for(ArrayList<String> list : g.getDofS()) {
+			dsResult ++;
+			System.out.println("label("+dsResult+")  | "+list);
+		}
 	}
 	
 	

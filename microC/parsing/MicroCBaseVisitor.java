@@ -5,7 +5,8 @@ import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 import programAnalysis.Declarations.Declarations;
 import programAnalysis.Declarations.DeclarationsSeqs;
 import programAnalysis.Epressions.Expressions;
-import programAnalysis.programs.Program;
+import programAnalysis.Epressions.IntegerN;
+import programAnalysis.statements.BlockStmt;
 import programAnalysis.statements.Break;
 import programAnalysis.statements.Continue;
 import programAnalysis.statements.Statements;
@@ -34,21 +35,21 @@ public class MicroCBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitAexpr1(MicroCParser.Aexpr1Context ctx) { return visitChildren(ctx); }
+	@Override public Expressions visitAexpr1(MicroCParser.Aexpr1Context ctx) { return (Expressions) visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitAexpr2(MicroCParser.Aexpr2Context ctx) { return visitChildren(ctx); }
+	@Override public Expressions visitAexpr2(MicroCParser.Aexpr2Context ctx) { return (Expressions) visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitAexpr3(MicroCParser.Aexpr3Context ctx) { return visitChildren(ctx); }
+	@Override public Expressions visitAexpr3(MicroCParser.Aexpr3Context ctx) { return (Expressions) visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -62,14 +63,14 @@ public class MicroCBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitBexpr1(MicroCParser.Bexpr1Context ctx) { return visitChildren(ctx); }
+	@Override public Expressions visitBexpr1(MicroCParser.Bexpr1Context ctx) { return (Expressions) visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitBexpr2(MicroCParser.Bexpr2Context ctx) { return visitChildren(ctx); }
+	@Override public Expressions visitBexpr2(MicroCParser.Bexpr2Context ctx) { return (Expressions) visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -90,9 +91,7 @@ public class MicroCBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public DeclarationsSeqs visitDecl(MicroCParser.DeclContext ctx) { 
-		visitChildren(ctx);
-		return new DeclarationsSeqs(); }
+	@Override public DeclarationsSeqs visitDecl(MicroCParser.DeclContext ctx) { return (DeclarationsSeqs) visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -106,7 +105,7 @@ public class MicroCBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public StatementsSeqs visitStmt(MicroCParser.StmtContext ctx) { return new StatementsSeqs(); }
+	@Override public StatementsSeqs visitStmt(MicroCParser.StmtContext ctx) { return (StatementsSeqs) visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -155,33 +154,33 @@ public class MicroCBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public While visitWhileStmt(MicroCParser.WhileStmtContext ctx) { return (While)visitChildren(ctx); }
+	@Override public While visitWhileStmt(MicroCParser.WhileStmtContext ctx) { return (While) visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitBlockStmt(MicroCParser.BlockStmtContext ctx) { return visitChildren(ctx); }
+	@Override public BlockStmt visitBlockStmt(MicroCParser.BlockStmtContext ctx) { return (BlockStmt) visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public Program visitProgram(MicroCParser.ProgramContext ctx) { return new Program(); }
-	/**
-	 * {@inheritDoc}
-	 * 
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitIdentifier(MicroCParser.IdentifierContext ctx) { return visitChildren(ctx); }
+	@Override public T visitProgram(MicroCParser.ProgramContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitInteger(MicroCParser.IntegerContext ctx) { return visitChildren(ctx); }
+	@Override public String visitIdentifier(MicroCParser.IdentifierContext ctx) { return (String) visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public IntegerN visitInteger(MicroCParser.IntegerContext ctx) { return (IntegerN) visitChildren(ctx); }
 }

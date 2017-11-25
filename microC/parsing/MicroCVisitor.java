@@ -5,7 +5,8 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 import programAnalysis.Declarations.Declarations;
 import programAnalysis.Declarations.DeclarationsSeqs;
 import programAnalysis.Epressions.Expressions;
-import programAnalysis.programs.Program;
+import programAnalysis.Epressions.IntegerN;
+import programAnalysis.statements.BlockStmt;
 import programAnalysis.statements.Break;
 import programAnalysis.statements.Continue;
 import programAnalysis.statements.Statements;
@@ -31,19 +32,19 @@ public interface MicroCVisitor<T> extends ParseTreeVisitor<T> {
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitAexpr1(MicroCParser.Aexpr1Context ctx);
+	Expressions visitAexpr1(MicroCParser.Aexpr1Context ctx);
 	/**
 	 * Visit a parse tree produced by {@link MicroCParser#aexpr2}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitAexpr2(MicroCParser.Aexpr2Context ctx);
+	Expressions visitAexpr2(MicroCParser.Aexpr2Context ctx);
 	/**
 	 * Visit a parse tree produced by {@link MicroCParser#aexpr3}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitAexpr3(MicroCParser.Aexpr3Context ctx);
+	Expressions visitAexpr3(MicroCParser.Aexpr3Context ctx);
 	/**
 	 * Visit a parse tree produced by {@link MicroCParser#bexpr}.
 	 * @param ctx the parse tree
@@ -55,13 +56,13 @@ public interface MicroCVisitor<T> extends ParseTreeVisitor<T> {
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitBexpr1(MicroCParser.Bexpr1Context ctx);
+	Expressions visitBexpr1(MicroCParser.Bexpr1Context ctx);
 	/**
 	 * Visit a parse tree produced by {@link MicroCParser#bexpr2}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitBexpr2(MicroCParser.Bexpr2Context ctx);
+	Expressions visitBexpr2(MicroCParser.Bexpr2Context ctx);
 	/**
 	 * Visit a parse tree produced by {@link MicroCParser#opr}.
 	 * @param ctx the parse tree
@@ -139,23 +140,23 @@ public interface MicroCVisitor<T> extends ParseTreeVisitor<T> {
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitBlockStmt(MicroCParser.BlockStmtContext ctx);
+	BlockStmt visitBlockStmt(MicroCParser.BlockStmtContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MicroCParser#program}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	Program visitProgram(MicroCParser.ProgramContext ctx);
+	T visitProgram(MicroCParser.ProgramContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MicroCParser#identifier}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitIdentifier(MicroCParser.IdentifierContext ctx);
+	String visitIdentifier(MicroCParser.IdentifierContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link MicroCParser#integer}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitInteger(MicroCParser.IntegerContext ctx);
+	IntegerN visitInteger(MicroCParser.IntegerContext ctx);
 }
