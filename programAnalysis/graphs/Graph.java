@@ -414,6 +414,13 @@ public class Graph {
 				if( x.equals(assignment.getX()) ) {
 					ks.add(new Kill(x,entry.getKey()+""));
 				}
+			} else if(entry.getValue() instanceof IntX) {
+				IntX intx = (IntX) entry.getValue();
+				if(x.equals(intx.getVarName())) {
+					ks.add(new Kill(x,entry.getKey()+""));
+				}
+			} else if(entry.getValue() instanceof IntArray) {
+				
 			}
 		}
 		return ks;
@@ -528,7 +535,7 @@ public class Graph {
 			//if the RD of flow's right hand side label has been computed
 			if(rd_L.size()>0) {
 				//if RDrdl and RDrd_l contains different elements
-				//RDo(l') = RDo(l') U (RDo(l) \ Kill(l)) U Gen(l)
+				//RDo(l') = RDo(l') U (RDo(l) \ Kill(l)) U Gen(l))
 				for(String s : rdL) {
 					if(!rd_L.contains(s)) {
 						RDexitIncludeRDentry = false;
@@ -556,6 +563,7 @@ public class Graph {
 			//LIFO
 			if(!RDexitIncludeRDentry) {
 				for(int i=0; i<flowsCopy.size(); i++) {
+					//for loop. The loop flow copies from the flowsCopy
 					if(f.equals(flowsCopy.get(i)) && i<flowsCopy.size()-1) {
 						flows.add(1,flowsCopy.get(i+1));
 						break;
@@ -782,8 +790,11 @@ public class Graph {
 			//System.out.println("Assignment : " + assignment);
 			varSigns = ds.get(assignment.getX());
 			if(null != assignment.getA()) {
+				System.out.println("the assignment expression : " + assignment.getA());
 				HashSet<String> signs = handleExpressionDS(assignment.getA());
+				System.out.println("the signs of "+assignment.getX()+" : " + signs);
 				if(signs.size() != 0) {
+					varSigns.clear();
 					Iterator<String> i = signs.iterator();
 					while(i.hasNext()) {
 						varSigns.add(i.next());
@@ -838,8 +849,18 @@ public class Graph {
 					}
 				}
 			}
+		} else if(labels.get(l) instanceof IntX ) {
+			//System.out.println("intx for DS ...... ");
+			IntX intx = (IntX)labels.get(l);
+			varSigns = ds.get(intx.getVarName());
+			varSigns.add("0");
+		} else if(labels.get(l) instanceof IntArray ) {
+			//System.out.println("intx for DS ...... ");
+			IntArray intArray = (IntArray)labels.get(l);
+			varSigns = ds.get(intArray.getArrayName());
+			varSigns.add("0");
 		}
-		
+		System.out.println("ds hashmap : " + ds);
 		
 		ArrayList<String> list = new ArrayList<String>();
 		for (Entry<String, HashSet<String>> entry : ds.entrySet()) {
@@ -881,6 +902,7 @@ public class Graph {
 		if(a instanceof ExpressionOperations) {
 			ExpressionOperations expression = (ExpressionOperations) a;
 			sign = expression.getOperator();
+			System.out.println("expression.getA1() : " + expression.getA1());
 			if(expression.getA1() instanceof VariableX) {
 				VariableX v = (VariableX) expression.getA1();
 				leftHandSideSign = ds.get(v.getX());
@@ -904,6 +926,7 @@ public class Graph {
 			} else if(expression.getA2() instanceof ExpressionOperations) {
 				rightHandSideSign = handleExpressionDS(expression.getA2());
 			}
+			System.out.println("leftHandSideSign : " + leftHandSideSign + " ;rightHandSideSign : " + rightHandSideSign );
 			signs = calculationSigns(leftHandSideSign,sign,rightHandSideSign);
 		} else if(a instanceof IntegerN) {
 			int temp = ((IntegerN)a).getN();
@@ -912,9 +935,11 @@ public class Graph {
 		} else if(a instanceof False ||
 				  a instanceof NotB ||
 				  a instanceof True) {
-			
+			//nothing
 		} else if(a instanceof Array) {
 			//Array
+			Array array = (Array) a;
+			signs = ds.get(array.getArrayName());
 		}
 		//System.out.println("signs : " + signs);
 		return signs;
