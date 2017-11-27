@@ -43,10 +43,19 @@ public class SignDetection {
 		System.out.println();
 		System.out.println("-----------Detection of Sign RESULT-----------------");
 		int dsResult = 0;
-		for(ArrayList<String> list : g.getDofS()) {
+		for(int i=1; i<g.getDofS().size(); i++) {
 			dsResult ++;
-			System.out.println("label("+dsResult+")  | "+list);
+			if(g.getDofS().get(i).size() == 0) {
+				String s = "";
+				for(VariableX v :g.getVars()) {
+					s = v.getX() + ": {null}, " + s; 
+				}
+				s = s.substring(0, s.length()-2);
+				g.getDofS().get(i).add(s);
+			}
+			System.out.println("label("+ (i) +")  | "+g.getDofS().get(i));
 		}
+		System.out.println("label("+ (g.getDofS().size()) +")  | " + g.detectionOfSign( g.getDofS().size(), g.getDofS().get(g.getDofS().size()-1) ));
 	}
 	
 	

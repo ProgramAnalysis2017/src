@@ -68,6 +68,7 @@ public class Graph {
 	private ArrayList<ArrayList<String>> DofSFIFO = new ArrayList<ArrayList<String>>();
 	
 	private HashMap<String, HashSet<String>> ds = new HashMap<String, HashSet<String>>();
+	private HashMap<String, HashSet<String>> dsFIFO = new HashMap<String, HashSet<String>>();
 	
 	
 	
@@ -233,6 +234,7 @@ public class Graph {
 				entry = exit;
 			} else {
 				entry = conditionLabel;
+				conditionLabel = 0;
 			}
 		}
 		labelSum = exit; //recording how many labels the program has
@@ -271,7 +273,9 @@ public class Graph {
 		} else if(s0 instanceof Assignment || 
 				  s0 instanceof Break || 
 				  s0 instanceof AssignmentArray || 
-				  s0 instanceof Write) {
+				  s0 instanceof Write || 
+				  s0 instanceof ReadArray ||
+				  s0 instanceof ReadX) {
 			labels.put(label, s0);
 			Flow f;
 			if(conditionLabel != 0) {
@@ -389,6 +393,10 @@ public class Graph {
 				auxiliaryIntiKG(entry, ((IntX)entry.getValue()).getVarName());
 			} else if(entry.getValue() instanceof IntArray) {
 				auxiliaryIntiKG(entry, ((IntArray)entry.getValue()).getArrayName());
+			} else if(entry.getValue() instanceof ReadArray) {
+				auxiliaryIntiKG(entry, ((ReadArray)entry.getValue()).getArrayName());
+			} else if(entry.getValue() instanceof ReadX) {
+				auxiliaryIntiKG(entry, ((ReadX)entry.getValue()).getX());
 			}
 		}
 	}
@@ -420,7 +428,20 @@ public class Graph {
 					ks.add(new Kill(x,entry.getKey()+""));
 				}
 			} else if(entry.getValue() instanceof IntArray) {
-				
+				IntArray intArray = (IntArray) entry.getValue();
+				if(x.equals(intArray.getArrayName())) {
+					ks.add(new Kill(x,entry.getKey()+""));
+				}
+			} else if(entry.getValue() instanceof ReadArray) {
+				ReadArray readArray = (ReadArray) entry.getValue();
+				if(x.equals(readArray.getArrayName())) {
+					ks.add(new Kill(x,entry.getKey()+""));
+				}
+			} else if(entry.getValue() instanceof ReadX) {
+				ReadX readx = (ReadX) entry.getValue();
+				if(x.equals(readx.getX())) {
+					ks.add(new Kill(x,entry.getKey()+""));
+				}
 			}
 		}
 		return ks;
@@ -479,7 +500,7 @@ public class Graph {
 		
 		for(int j=0; j<vars.size(); j++) {
 			DofS.get(0).add(vars.get(j).getX() + ": {-,0,+}");
-			DofSFIFO.get(0).add(vars.get(j).getX() + ": {-,0,+}");
+			//DofSFIFO.get(0).add(vars.get(j).getX() + ": {-,0,+}");
 			ds.put(vars.get(j).getX(), new HashSet<String>());
 		}
 		
@@ -503,6 +524,12 @@ public class Graph {
 		algorithm(DofS,2);
 		System.out.println();
 		System.out.println("-------------------FIFO------------------------------");
+		ds.clear();
+		for(int j=0; j<vars.size(); j++) {
+			//DofS.get(0).add(vars.get(j).getX() + ": {-,0,+}");
+			DofSFIFO.get(0).add(vars.get(j).getX() + ": {-,0,+}");
+			ds.put(vars.get(j).getX(), new HashSet<String>());
+		}
 		System.out.println(flowsFIFO + "  | " + DofSFIFO);
 		algorithmFIFO(DofSFIFO,2);
 
@@ -529,6 +556,7 @@ public class Graph {
 			} else if(x==2) {
 				rdL = detectionOfSign(l, rdL);
 			}
+			//System.out.println("the rdL is : " + rdL);
 			
 			//RDo(l') = RDo(l') U RD.(l)
 			// compute whether (RDo(l) \ Kill(l)) U Gen(l) included in RD.(l)
@@ -542,7 +570,7 @@ public class Graph {
 						break;
 					}
 				}
-				
+				//System.out.println("RDexitIncludeRDentry : "+RDexitIncludeRDentry);
 				if(!RDexitIncludeRDentry) {
 					if(x==1) {
 						for(String s : rd_L) {
@@ -591,6 +619,10 @@ public class Graph {
 				generateRDexit();
 			} else if(flows.size()==0 && x==2) {
 				System.out.println("label ("+RDo.size()+")  | " + detectionOfSign(RDo.size(), RDo.get(RDo.size()-1)));
+			}
+			
+			if(rdL.size() == 0) {
+				break;
 			}
 			
 		}
@@ -678,6 +710,10 @@ public class Graph {
 				System.out.println("label ("+RDo.size()+")  | " + detectionOfSign(RDo.size(), RDo.get(RDo.size()-1)));
 			}
 			
+			if(rdL.size() == 0) {
+				break;
+			}
+			
 		}
 	}
 
@@ -703,37 +739,20 @@ public class Graph {
 	 */
 	private ArrayList<String> killAndGen(int l, ArrayList<String> rdL) {
 		boolean arrayIndexIsNegative = false;
+		
+		//handle the array assignment that the index is not nagtive 
 		if(labels.get(l) instanceof AssignmentArray) {
 			AssignmentArray assignmentArray = (AssignmentArray)labels.get(l);
 			if(null != assignmentArray.getIndex()) {
-				if(assignmentArray.getIndex() instanceof IntegerN) {
-					IntegerN n = (IntegerN)assignmentArray.getIndex();
-					if(n.getN()<0) {
-						arrayIndexIsNegative = true;
-					}
-				// if the index is expression, then this is complicated. Here only compute simple integer calculation
-				} else if(assignmentArray.getIndex() instanceof ExpressionOperations) {
-					ExpressionOperations expression = (ExpressionOperations)assignmentArray.getIndex();
-					if(expression.getA1() instanceof IntegerN && expression.getA2() instanceof IntegerN) {
-						if(expression.getOperator().equals("+")) {
-							if( ((IntegerN)expression.getA1()).getN() + ((IntegerN)expression.getA2()).getN() < 0 ) {
-								arrayIndexIsNegative = true;
-							}
-						} else if(expression.getOperator().equals("-")) {
-							if( ((IntegerN)expression.getA1()).getN() - ((IntegerN)expression.getA2()).getN() < 0 ) {
-								arrayIndexIsNegative = true;
-							}
-						} else if(expression.getOperator().equals("*")) {
-							if( ((IntegerN)expression.getA1()).getN() * ((IntegerN)expression.getA2()).getN() < 0 ) {
-								arrayIndexIsNegative = true;
-							}
-						} else if(expression.getOperator().equals("/")) {
-							if( ((IntegerN)expression.getA2()).getN() == 0 || ((IntegerN)expression.getA1()).getN() / ((IntegerN)expression.getA2()).getN() < 0 ) {
-								arrayIndexIsNegative = true;
-							}
-						}
-					}
-				}
+				arrayIndexIsNegative = handleArrayIndexForRD(arrayIndexIsNegative, assignmentArray.getIndex());
+			}
+		}
+		
+		//handle read array that the index is not negative
+		if(labels.get(l) instanceof ReadArray) {
+			ReadArray readArray = (ReadArray)labels.get(l);
+			if(null != readArray.getA()) {
+				arrayIndexIsNegative = handleArrayIndexForRD(arrayIndexIsNegative, readArray.getA());
 			}
 		}
 		
@@ -775,6 +794,39 @@ public class Graph {
 		
 		return rdL;
 	}
+
+	private boolean handleArrayIndexForRD(boolean arrayIndexIsNegative, Expressions e) {
+		
+		if(e instanceof IntegerN) {
+			IntegerN n = (IntegerN)e;
+			if(n.getN()<0) {
+				arrayIndexIsNegative = true;
+			}
+		// if the index is expression, then this is complicated. Here only compute simple integer calculation
+		} else if(e instanceof ExpressionOperations) {
+			ExpressionOperations expression = (ExpressionOperations) e;
+			if(expression.getA1() instanceof IntegerN && expression.getA2() instanceof IntegerN) {
+				if(expression.getOperator().equals("+")) {
+					if( ((IntegerN)expression.getA1()).getN() + ((IntegerN)expression.getA2()).getN() < 0 ) {
+						arrayIndexIsNegative = true;
+					}
+				} else if(expression.getOperator().equals("-")) {
+					if( ((IntegerN)expression.getA1()).getN() - ((IntegerN)expression.getA2()).getN() < 0 ) {
+						arrayIndexIsNegative = true;
+					}
+				} else if(expression.getOperator().equals("*")) {
+					if( ((IntegerN)expression.getA1()).getN() * ((IntegerN)expression.getA2()).getN() < 0 ) {
+						arrayIndexIsNegative = true;
+					}
+				} else if(expression.getOperator().equals("/")) {
+					if( ((IntegerN)expression.getA2()).getN() == 0 || ((IntegerN)expression.getA1()).getN() / ((IntegerN)expression.getA2()).getN() < 0 ) {
+						arrayIndexIsNegative = true;
+					}
+				}
+			}
+		}
+		return arrayIndexIsNegative;
+	}
 	
 	/**
 	 * implementing the analysis of sign detection
@@ -782,7 +834,7 @@ public class Graph {
 	 * @param rdL
 	 * @return
 	 */
-	private ArrayList<String> detectionOfSign(int l, ArrayList<String> rdL) {
+	public ArrayList<String> detectionOfSign(int l, ArrayList<String> rdL) {
 		// TODO calculate the sign of each variable
 		HashSet<String> varSigns = new HashSet<String>();
 		if(labels.get(l) instanceof Assignment) {
@@ -790,9 +842,9 @@ public class Graph {
 			//System.out.println("Assignment : " + assignment);
 			varSigns = ds.get(assignment.getX());
 			if(null != assignment.getA()) {
-				System.out.println("the assignment expression : " + assignment.getA());
+				//System.out.println("the assignment expression : " + assignment.getA());
 				HashSet<String> signs = handleExpressionDS(assignment.getA());
-				System.out.println("the signs of "+assignment.getX()+" : " + signs);
+				//System.out.println("the signs of "+assignment.getX()+" : " + signs);
 				if(signs.size() != 0) {
 					varSigns.clear();
 					Iterator<String> i = signs.iterator();
@@ -805,39 +857,7 @@ public class Graph {
 			AssignmentArray assignmentArray = (AssignmentArray)labels.get(l);
 			varSigns = ds.get(assignmentArray.getArrayName());
 			if(null != assignmentArray.getIndex()) {
-				if(assignmentArray.getIndex() instanceof IntegerN) {
-					IntegerN n = (IntegerN)assignmentArray.getIndex();
-					if(n.getN()<0) {
-						varSigns.clear();
-						varSigns.add("null");
-					}
-				// if the index is expression, then this is complicated. Here only compute simple integer calculation
-				} else if(assignmentArray.getIndex() instanceof ExpressionOperations) {
-					ExpressionOperations expression = (ExpressionOperations)assignmentArray.getIndex();
-					if(expression.getA1() instanceof IntegerN && expression.getA2() instanceof IntegerN) {
-						if(expression.getOperator().equals("+")) {
-							if( ((IntegerN)expression.getA1()).getN() + ((IntegerN)expression.getA2()).getN() < 0 ) {
-								varSigns.clear();
-								varSigns.add("null");
-							}
-						} else if(expression.getOperator().equals("-")) {
-							if( ((IntegerN)expression.getA1()).getN() - ((IntegerN)expression.getA2()).getN() < 0 ) {
-								varSigns.clear();
-								varSigns.add("null");
-							}
-						} else if(expression.getOperator().equals("*")) {
-							if( ((IntegerN)expression.getA1()).getN() * ((IntegerN)expression.getA2()).getN() < 0 ) {
-								varSigns.clear();
-								varSigns.add("null");
-							}
-						} else if(expression.getOperator().equals("/")) {
-							if( ((IntegerN)expression.getA2()).getN() == 0 || ((IntegerN)expression.getA1()).getN() / ((IntegerN)expression.getA2()).getN() < 0 ) {
-								varSigns.clear();
-								varSigns.add("null");
-							}
-						}
-					}
-				}
+				handleArrayIndexForDS(varSigns, assignmentArray.getIndex());
 			}
 			
 			if(null != assignmentArray.getA() && !varSigns.contains("null")) {
@@ -848,6 +868,26 @@ public class Graph {
 						varSigns.add(i.next());
 					}
 				}
+			}
+		} else if(labels.get(l) instanceof ReadArray) {
+			ReadArray readArray = (ReadArray)labels.get(l);
+			varSigns = ds.get(readArray.getArrayName());
+			if(null != readArray.getA()) {
+				handleArrayIndexForDS(varSigns, readArray.getA());
+			}
+			if(!varSigns.contains("null")) {
+				varSigns.clear();
+				varSigns.add("+");
+				varSigns.add("0");
+				varSigns.add("-");
+			} else if(varSigns.contains("null")) {
+				//error happens and all the analysis goes to buttom which is null
+				for(Map.Entry<String, HashSet<String>> entry : ds.entrySet()) {
+					HashSet<String> signs = entry.getValue();
+					signs.clear();
+					signs.add("null");
+				}
+				return new ArrayList<String>();
 			}
 		} else if(labels.get(l) instanceof IntX ) {
 			//System.out.println("intx for DS ...... ");
@@ -860,7 +900,7 @@ public class Graph {
 			varSigns = ds.get(intArray.getArrayName());
 			varSigns.add("0");
 		}
-		System.out.println("ds hashmap : " + ds);
+		//System.out.println("ds hashmap : " + ds);
 		
 		ArrayList<String> list = new ArrayList<String>();
 		for (Entry<String, HashSet<String>> entry : ds.entrySet()) {
@@ -885,6 +925,50 @@ public class Graph {
 		}
 		return list;
 	}
+
+	private void handleArrayIndexForDS(HashSet<String> varSigns, Expressions e) {
+		//System.out.println("type of the ReadArray index : " + e);
+		if(e instanceof VariableX) {
+			VariableX v = (VariableX)e;
+			HashSet<String> signs = ds.get(v.getX());
+			if(signs.contains("-")) {
+				varSigns.clear();
+				varSigns.add("null");
+			}
+		} else if(e instanceof IntegerN) {
+			IntegerN n = (IntegerN)e;
+			if(n.getN()<0) {
+				varSigns.clear();
+				varSigns.add("null");
+			}
+		// if the index is expression, then this is complicated. Here only compute simple integer calculation
+		} else if(e instanceof ExpressionOperations) {
+			ExpressionOperations expression = (ExpressionOperations)e;
+			if(expression.getA1() instanceof IntegerN && expression.getA2() instanceof IntegerN) {
+				if(expression.getOperator().equals("+")) {
+					if( ((IntegerN)expression.getA1()).getN() + ((IntegerN)expression.getA2()).getN() < 0 ) {
+						varSigns.clear();
+						varSigns.add("null");
+					}
+				} else if(expression.getOperator().equals("-")) {
+					if( ((IntegerN)expression.getA1()).getN() - ((IntegerN)expression.getA2()).getN() < 0 ) {
+						varSigns.clear();
+						varSigns.add("null");
+					}
+				} else if(expression.getOperator().equals("*")) {
+					if( ((IntegerN)expression.getA1()).getN() * ((IntegerN)expression.getA2()).getN() < 0 ) {
+						varSigns.clear();
+						varSigns.add("null");
+					}
+				} else if(expression.getOperator().equals("/")) {
+					if( ((IntegerN)expression.getA2()).getN() == 0 || ((IntegerN)expression.getA1()).getN() / ((IntegerN)expression.getA2()).getN() < 0 ) {
+						varSigns.clear();
+						varSigns.add("null");
+					}
+				}
+			}
+		}
+	}
 	
 	/**
 	 * handle the expression for Detection of Sign. Calculating the signs.
@@ -902,7 +986,7 @@ public class Graph {
 		if(a instanceof ExpressionOperations) {
 			ExpressionOperations expression = (ExpressionOperations) a;
 			sign = expression.getOperator();
-			System.out.println("expression.getA1() : " + expression.getA1());
+			//System.out.println("expression.getA1() : " + expression.getA1());
 			if(expression.getA1() instanceof VariableX) {
 				VariableX v = (VariableX) expression.getA1();
 				leftHandSideSign = ds.get(v.getX());
@@ -926,8 +1010,11 @@ public class Graph {
 			} else if(expression.getA2() instanceof ExpressionOperations) {
 				rightHandSideSign = handleExpressionDS(expression.getA2());
 			}
-			System.out.println("leftHandSideSign : " + leftHandSideSign + " ;rightHandSideSign : " + rightHandSideSign );
-			signs = calculationSigns(leftHandSideSign,sign,rightHandSideSign);
+			//System.out.println("leftHandSideSign : " + leftHandSideSign + " ;rightHandSideSign : " + rightHandSideSign );
+			if(!leftHandSideSign.contains("null") && !rightHandSideSign.contains("null") ) {
+				signs = calculationSigns(leftHandSideSign,sign,rightHandSideSign);
+			}
+			
 		} else if(a instanceof IntegerN) {
 			int temp = ((IntegerN)a).getN();
 			String tempSign = signOfInteger(temp);
@@ -1297,6 +1384,14 @@ public class Graph {
 
 	public void setBreakLabel(int breakLabel) {
 		this.breakLabel = breakLabel;
+	}
+
+	public HashMap<String, HashSet<String>> getDsFIFO() {
+		return dsFIFO;
+	}
+
+	public void setDsFIFO(HashMap<String, HashSet<String>> dsFIFO) {
+		this.dsFIFO = dsFIFO;
 	}
 
 }
