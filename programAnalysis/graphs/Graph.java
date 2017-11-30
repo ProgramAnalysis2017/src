@@ -38,7 +38,6 @@ import programAnalysis.Epressions.True;
 public class Graph {
 	
 	//private ArrayList<Integer> labels;
-	private int initLabel;
 	private ArrayList<Flow> flows = new ArrayList<Flow>();
 	private ArrayList<Flow> flowsCopy = new ArrayList<Flow>();
 	private ArrayList<Flow> flowsFIFO = new ArrayList<Flow>();
@@ -56,6 +55,9 @@ public class Graph {
 	private int breakLabel = 0;
 	
 	private Program program;
+	
+	private int initLabel;
+	private ArrayList<Integer> finalLabels;
 	
 	private ArrayList<ArrayList<String>> RDo = new ArrayList<ArrayList<String>>();
 	private ArrayList<ArrayList<String>> RDexit = new ArrayList<ArrayList<String>>();
@@ -1392,6 +1394,14 @@ public class Graph {
 
 	public void setDsFIFO(HashMap<String, HashSet<String>> dsFIFO) {
 		this.dsFIFO = dsFIFO;
+	}
+
+	public ArrayList<Integer> getFinalLabels() {
+		return finalLabels;
+	}
+
+	public void setFinalLabels(ArrayList<Integer> finalLabels) {
+		this.finalLabels = finalLabels;
 	}
 
 }
